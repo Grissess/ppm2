@@ -16,8 +16,9 @@
 --
 
 ALLOW_FLIGHT = CreateConVar('ppm2_sv_flight', '1', {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, 'Allow flight for pegasus and alicorns. It obeys PlayerNoClip hook.')
-FORCE_ALLOW_FLIGHT = CreateConVar('ppm2_sv_flight_force', '0', {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, 'Ignore PlayerNoClip hook')
+FORCE_ALLOW_FLIGHT = CreateConVar('ppm2_sv_flight_force', '0', {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, 'Ignore PlayerNoClip hook for ppm2_sv_flight.')
 FLIGHT_DAMAGE = CreateConVar('ppm2_sv_flightdmg', '1', {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, 'Damage players in flight')
+UNICORN_FLIGHT = CreateConVar('ppm2_sv_unicorn_flight', '1', {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, 'Also allow "flight" (self-levitation) for unicorns when ppm2_sv_flight is enabled.')
 
 class PonyflyController
 	new: (data) =>
@@ -47,6 +48,7 @@ class PonyflyController
 		return if not IsValid(@ent)
 		return if @lastState == status
 		@lastState = status
+		@ent\SetNWBool("PPM2.Flying", status)
 		if not status
 			{:p, :y, :r} = @ent\EyeAngles()
 			newAng = Angle(p, y, 0)
@@ -269,6 +271,13 @@ hook.Add 'CalcMainActivity', 'PPM2.Ponyfly', (movedata) =>
 				@AnimResetGestureSlot(GESTURE_SLOT_CUSTOM)
 				@SetIK(true) if CLIENT
 
+PPM2.CanPonyFly = =>
+	return (
+		@GetRace() == PPM2.RACE_PEGASUS or
+		@GetRace() == PPM2.RACE_ALICORN or
+		(@GetRace() == PPM2.RACE_UNICORN and UNICORN_FLIGHT\GetBool())
+	)
+
 if SERVER
 	concommand.Add 'ppm2_fly', =>
 		return if not ALLOW_FLIGHT\GetBool()
@@ -281,7 +290,7 @@ if SERVER
 			can = hook.Run('PlayerNoClip', @, false) or hook.Run('PPM2Fly', @, false)
 			data\SetFly(false) if can
 		else
-			return if data\GetRace() ~= PPM2.RACE_PEGASUS and data\GetRace() ~= PPM2.RACE_ALICORN
+			return if not PPM2.CanPonyFly(data)
 			return data\SetFly(true) if FORCE_ALLOW_FLIGHT\GetBool()
 			can = hook.Run('PlayerNoClip', @, true) or hook.Run('PPM2Fly', @, true)
 			data\SetFly(true) if can
@@ -297,10 +306,13 @@ else
 			return if not @IsPonyCached()
 			data = @GetPonyData()
 			return if not data
-			if data\GetRace() ~= PPM2.RACE_PEGASUS and data\GetRace() ~= PPM2.RACE_ALICORN
+			if not PPM2.CanPonyFly(data)
 				if lastMessage < RealTime()
 					lastMessage = RealTime() + 1
-					PPM2.ChatPrint('You need to be a Pegasus or an Alicorn to fly!')
+					if UNICORN_FLIGHT\GetBool()
+						PPM2.ChatPrint('You need to be a Pegasus, Unicorn, or an Alicorn to fly!')
+					else
+						PPM2.ChatPrint('You need to be a Pegasus or an Alicorn to fly!')
 				return
 			can = hook.Run('PlayerNoClip', @, not data\GetFly()) or hook.Run('PPM2Fly', @, not data\GetFly())
 			if not can

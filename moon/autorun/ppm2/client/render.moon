@@ -182,76 +182,120 @@ do
 	fireMat = 'particle/fire'
 	hornShift = Vector(1, 0.15, 14.5)
 
+	PPM2.GetMagicAuraColor = =>
+		if @GetSeparateMagicColor()
+			return @GetHornMagicColor()
+		else
+			if not @GetSeparateEyes()
+				return PPM2.LerpColor(0.5, @GetEyeIrisTop(), @GetEyeIrisBottom())
+			else
+				left = PPM2.LerpColor(0.5, @GetEyeIrisTopLeft(), @GetEyeIrisBottomLeft())
+				right = PPM2.LerpColor(0.5, @GetEyeIrisTopRight(), @GetEyeIrisBottomRight())
+				return PPM2.LerpColor(0.5, left, right)
+
+	PPM2.ScaledAABB = (scale = 1.2) =>
+		center = @WorldSpaceCenter()
+		mins, maxs = @WorldSpaceAABB()
+		return center + (mins - center) * scale, center + (maxs - center) * scale, center
+
 	hook.Add 'PreDrawHalos', 'PPM2.HornEffects', =>
 		return if not HORN_HIDE_BEAM\GetBool()
 		frame = FrameNumber()
 		cTime = (RealTime() % 20) * 4
-		for ent, status in pairs hornGlowStatus
-			if IsValid(ent) and status.frame == frame and IsValid(status.target)
-				additional = math.sin(cTime / 2 + status.haloSeed * 3) * 40
-				newCol = PPM2.AddColor(status.color, Color(additional, additional, additional))
-				halo.Add({status.target}, newCol, math.sin(cTime + status.haloSeed) * 4 + 8, math.cos(cTime + status.haloSeed) * 4 + 8, 2)
+		for ent, statuses in pairs hornGlowStatus
+			for src, status in pairs statuses
+				if IsValid(ent) and status.frame == frame and IsValid(status.target)
+					additional = math.sin(cTime / 2 + status.haloSeed * 3) * 40
+					newCol = PPM2.AddColor(status.color, Color(additional, additional, additional))
+					halo.Add({status.target}, newCol, math.sin(cTime + status.haloSeed) * 4 + 8, math.cos(cTime + status.haloSeed) * 4 + 8, 2)
+
+	hook.Add 'PreRender', 'PPM2.HornEffects', ->
+		for pl in *player.GetAll()
+			continue if not IsValid(pl)
+			data = pl\GetPonyData()
+			continue if not data
+			if data\GetRace() == PPM2.RACE_UNICORN and pl\GetNWBool("PPM2.Flying")
+				if not hornGlowStatus[pl]
+					hornGlowStatus[pl] = {}
+				if not hornGlowStatus[pl].fly
+					hornGlowStatus[pl].fly = {
+						:data
+						isEnabled: true
+						attach: pl\LookupAttachment 'eyes'
+						nextSmokeParticle: 0
+						nextGrabParticle: 0
+						color: PPM2.GetMagicAuraColor(data)
+						haloSeed: math.random(0, 2*math.pi)
+						emmiter: ParticleEmitter(EyePos())
+						emmiterProp: ParticleEmitter(EyePos())
+					}
+				with hornGlowStatus[pl].fly
+					.frame = FrameNumber()
+					.target = pl
+					.tpos = pl\GetPos()
+					.mins, .maxs, .center = PPM2.ScaledAABB(pl)
 
 	hook.Add 'Think', 'PPM2.HornEffects', =>
 		frame = FrameNumber()
-		for ent, status in pairs hornGlowStatus
-			if not IsValid(ent)
-				status.emmiter\Finish() if IsValid(status.emmiter)
-				status.emmiterProp\Finish() if IsValid(status.emmiterProp)
-				hornGlowStatus[ent] = nil
-			elseif status.frame ~= frame
-				status.data\SetHornGlow(status.prevStatus)
-				status.emmiter\Finish() if IsValid(status.emmiter)
-				status.emmiterProp\Finish() if IsValid(status.emmiterProp)
-				hornGlowStatus[ent] = nil
-			else
-				if not status.prevStatus and RENDER_HORN_GLOW\GetBool() and status.data\GetHornGlow() ~= status.isEnabled
-					status.data\SetHornGlow(status.isEnabled)
-				if status.attach and IsValid(status.target)
-					grabHornPos = Vector(hornShift) * status.data\GetPonySize()
-					{:Pos, :Ang} = ent\GetAttachment(status.attach)
-					grabHornPos\Rotate(Ang)
-					if status.isEnabled and IsValid(status.emmiter) and status.nextSmokeParticle < RealTime()
-						status.nextSmokeParticle = RealTime() + math.Rand(0.1, 0.2)
-						for i = 1, math.random(1, 4)
-							vec = VectorRand()
-							calcPos = Pos + grabHornPos + vec
-							with particle = status.emmiter\Add(smokeMaterial, calcPos)
-								\SetRollDelta(math.rad(math.random(0, 360)))
-								\SetPos(calcPos)
-								life = math.Rand(0.6, 0.9)
-								\SetStartAlpha(math.random(80, 170))
-								\SetDieTime(life)
-								\SetColor(status.color.r, status.color.g, status.color.b)
-								\SetEndAlpha(0)
-								size = math.Rand(2, 3)
-								\SetEndSize(math.Rand(2, size))
-								\SetStartSize(size)
-								\SetGravity(Vector())
-								\SetAirResistance(10)
-								vecRand = VectorRand()
-								vecRand.z *= 2
-								\SetVelocity(ent\GetVelocity() + vecRand * status.data\GetPonySize() * 2)
-								\SetCollide(false)
-					if status.isEnabled and IsValid(status.emmiterProp) and status.nextGrabParticle < RealTime() and status.mins and status.maxs
-						status.nextGrabParticle = RealTime() + math.Rand(0.05, 0.3)
-						status.emmiterProp\SetPos(status.tpos)
-						for i = 1, math.random(2, 6)
-							calcPos = Vector(math.Rand(status.mins.x, status.maxs.x), math.Rand(status.mins.y, status.maxs.y), math.Rand(status.mins.z, status.maxs.z))
-							with particle = status.emmiterProp\Add(fireMat, calcPos)
-								\SetRollDelta(math.rad(math.random(0, 360)))
-								\SetPos(calcPos)
-								life = math.Rand(0.5, 0.9)
-								\SetStartAlpha(math.random(130, 230))
-								\SetDieTime(life)
-								\SetColor(status.color.r, status.color.g, status.color.b)
-								\SetEndAlpha(0)
-								\SetEndSize(0)
-								\SetStartSize(math.Rand(2, 6))
-								\SetGravity(Vector())
-								\SetAirResistance(15)
-								\SetVelocity(VectorRand() * 6)
-								\SetCollide(false)
+		for ent, statuses in pairs hornGlowStatus
+			for src, status in pairs statuses
+				if not IsValid(ent)
+					status.emmiter\Finish() if IsValid(status.emmiter)
+					status.emmiterProp\Finish() if IsValid(status.emmiterProp)
+					hornGlowStatus[ent] = nil
+				elseif status.frame ~= frame
+					status.data\SetHornGlow(status.prevStatus) if status.prevStatus ~= nil
+					status.emmiter\Finish() if IsValid(status.emmiter)
+					status.emmiterProp\Finish() if IsValid(status.emmiterProp)
+					hornGlowStatus[ent] = nil
+				else
+					if not status.prevStatus and RENDER_HORN_GLOW\GetBool() and status.data\GetHornGlow() ~= status.isEnabled
+						status.data\SetHornGlow(status.isEnabled)
+					if status.attach and IsValid(status.target)
+						grabHornPos = Vector(hornShift) * status.data\GetPonySize()
+						{:Pos, :Ang} = ent\GetAttachment(status.attach)
+						grabHornPos\Rotate(Ang)
+						if status.isEnabled and IsValid(status.emmiter) and status.nextSmokeParticle < RealTime()
+							status.nextSmokeParticle = RealTime() + math.Rand(0.1, 0.2)
+							for i = 1, math.random(1, 4)
+								vec = VectorRand()
+								calcPos = Pos + grabHornPos + vec
+								with particle = status.emmiter\Add(smokeMaterial, calcPos)
+									\SetRollDelta(math.rad(math.random(0, 360)))
+									\SetPos(calcPos)
+									life = math.Rand(0.6, 0.9)
+									\SetStartAlpha(math.random(80, 170))
+									\SetDieTime(life)
+									\SetColor(status.color.r, status.color.g, status.color.b)
+									\SetEndAlpha(0)
+									size = math.Rand(2, 3)
+									\SetEndSize(math.Rand(2, size))
+									\SetStartSize(size)
+									\SetGravity(Vector())
+									\SetAirResistance(10)
+									vecRand = VectorRand()
+									vecRand.z *= 2
+									\SetVelocity(ent\GetVelocity() + vecRand * status.data\GetPonySize() * 2)
+									\SetCollide(false)
+						if status.isEnabled and IsValid(status.emmiterProp) and status.nextGrabParticle < RealTime() and status.mins and status.maxs
+							status.nextGrabParticle = RealTime() + math.Rand(0.05, 0.3)
+							status.emmiterProp\SetPos(status.tpos)
+							for i = 1, math.random(2, 6)
+								calcPos = Vector(math.Rand(status.mins.x, status.maxs.x), math.Rand(status.mins.y, status.maxs.y), math.Rand(status.mins.z, status.maxs.z))
+								with particle = status.emmiterProp\Add(fireMat, calcPos)
+									\SetRollDelta(math.rad(math.random(0, 360)))
+									\SetPos(calcPos)
+									life = math.Rand(0.5, 0.9)
+									\SetStartAlpha(math.random(130, 230))
+									\SetDieTime(life)
+									\SetColor(status.color.r, status.color.g, status.color.b)
+									\SetEndAlpha(0)
+									\SetEndSize(0)
+									\SetStartSize(math.Rand(2, 6))
+									\SetGravity(Vector())
+									\SetAirResistance(15)
+									\SetVelocity(VectorRand() * 6)
+									\SetCollide(false)
 
 	hook.Add 'DrawPhysgunBeam', 'PPM2.HornEffects', (physgun = NULL, isEnabled = false, target = NULL, bone = 0, hitPos = Vector()) =>
 		return if not HORN_FP\GetBool() and @ == LocalPlayer() and not @ShouldDrawLocalPlayer()
@@ -259,7 +303,9 @@ do
 		return if not data
 		return if data\GetRace() ~= PPM2.RACE_UNICORN and data\GetRace() ~= PPM2.RACE_ALICORN
 		if not hornGlowStatus[@]
-			hornGlowStatus[@] = {
+			hornGlowStatus[@] = {}
+		if not hornGlowStatus[@].physgun
+			hornGlowStatus[@].physgun = {
 				frame: FrameNumber()
 				prevStatus: data\GetHornGlow()
 				:data, :isEnabled, :hitPos, :target, :bone
@@ -269,23 +315,16 @@ do
 				nextGrabParticle: 0
 			}
 
-			with hornGlowStatus[@]
+			with hornGlowStatus[@].physgun
 				if HORN_PARTICLES\GetBool()
 					.emmiter = ParticleEmitter(EyePos())
 					.emmiterProp = ParticleEmitter(EyePos())
 
-				.color = data\GetHornMagicColor()
-				.haloSeed = math.rad(math.random(-1000, 1000))
+				.color = PPM2.GetMagicAuraColor(data)
+				.haloSeed = math.random(0, 2*math.pi)
 
-				if not data\GetSeparateMagicColor()
-					if not data\GetSeparateEyes()
-						.color = PPM2.LerpColor(0.5, data\GetEyeIrisTop(), data\GetEyeIrisBottom())
-					else
-						lerpLeft = PPM2.LerpColor(0.5, data\GetEyeIrisTopLeft(), data\GetEyeIrisBottomLeft())
-						lerpRight = PPM2.LerpColor(0.5, data\GetEyeIrisTopRight(), data\GetEyeIrisBottomRight())
-						.color = PPM2.LerpColor(0.5, lerpLeft, lerpRight)
 		else
-			with hornGlowStatus[@]
+			with hornGlowStatus[@].physgun
 				.frame = FrameNumber()
 				.isEnabled = isEnabled
 				.target = target
@@ -293,11 +332,7 @@ do
 				.hitPos = hitPos
 				if IsValid(target)
 					.tpos = target\GetPos() + hitPos
-					center = target\WorldSpaceCenter()
-					.center = center
-					mins, maxs = target\WorldSpaceAABB()
-					.mins = center + (mins - center) * 1.2
-					.maxs = center + (maxs - center) * 1.2
+					.mins, .maxs, .center = PPM2.ScaledAABB(target)
 		return false if HORN_HIDE_BEAM\GetBool() and IsValid(target)
 
 hook.Add 'PrePlayerDraw', 'PPM2.PlayerDraw', PPM2.PrePlayerDraw, 2
