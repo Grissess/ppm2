@@ -47,7 +47,7 @@ if SERVER
 		return if @GetPos()\Distance(tr.HitPos) < 32
 
 		@SetPos(tr.HitPos)
-		net.Start('PPM2.Teleport')
+		net.Start('PPM2.Teleport', true)
 		net.WriteEntity(@)
 		net.WriteVector(@WorldSpaceCenter())
 		net.WriteVector(tr.HitPos + @OBBCenter())

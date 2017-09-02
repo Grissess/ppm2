@@ -180,7 +180,6 @@ do
 	hornGlowStatus = {}
 	smokeMaterial = 'ppm/hornsmoke'
 	fireMat = 'particle/fire'
-	hornShift = Vector(1, 0.15, 14.5)
 
 	PPM2.GetMagicAuraColor = =>
 		if @GetSeparateMagicColor()
@@ -252,7 +251,7 @@ do
 					if not status.prevStatus and RENDER_HORN_GLOW\GetBool() and status.data\GetHornGlow() ~= status.isEnabled
 						status.data\SetHornGlow(status.isEnabled)
 					if status.attach and IsValid(status.target)
-						grabHornPos = Vector(hornShift) * status.data\GetPonySize()
+						grabHornPos = PPM2.HORN_FROM_EYE_ATTACH * status.data\GetPonySize()
 						{:Pos, :Ang} = ent\GetAttachment(status.attach)
 						grabHornPos\Rotate(Ang)
 						if status.isEnabled and IsValid(status.emmiter) and status.nextSmokeParticle < RealTime()
