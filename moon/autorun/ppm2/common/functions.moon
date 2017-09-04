@@ -180,6 +180,17 @@ do
 			\SetSocksColor(randomColor(), ...)
 		return object
 
+PPM2.GetMagicAuraColor = =>
+	if @GetSeparateMagicColor()
+		return @GetHornMagicColor()
+	else
+		if not @GetSeparateEyes()
+			return PPM2.LerpColor(0.5, @GetEyeIrisTop(), @GetEyeIrisBottom())
+		else
+			left = PPM2.LerpColor(0.5, @GetEyeIrisTopLeft(), @GetEyeIrisBottomLeft())
+			right = PPM2.LerpColor(0.5, @GetEyeIrisTopRight(), @GetEyeIrisBottomRight())
+			return PPM2.LerpColor(0.5, left, right)
+
 entMeta = FindMetaTable('Entity')
 
 entMeta.IsPony = =>

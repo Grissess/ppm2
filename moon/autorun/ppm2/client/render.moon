@@ -181,17 +181,6 @@ do
 	smokeMaterial = 'ppm/hornsmoke'
 	fireMat = 'particle/fire'
 
-	PPM2.GetMagicAuraColor = =>
-		if @GetSeparateMagicColor()
-			return @GetHornMagicColor()
-		else
-			if not @GetSeparateEyes()
-				return PPM2.LerpColor(0.5, @GetEyeIrisTop(), @GetEyeIrisBottom())
-			else
-				left = PPM2.LerpColor(0.5, @GetEyeIrisTopLeft(), @GetEyeIrisBottomLeft())
-				right = PPM2.LerpColor(0.5, @GetEyeIrisTopRight(), @GetEyeIrisBottomRight())
-				return PPM2.LerpColor(0.5, left, right)
-
 	PPM2.ScaledAABB = (scale = 1.2) =>
 		center = @WorldSpaceCenter()
 		mins, maxs = @WorldSpaceAABB()
@@ -213,11 +202,11 @@ do
 			continue if not IsValid(pl)
 			data = pl\GetPonyData()
 			continue if not data
-			if data\GetRace() == PPM2.RACE_UNICORN and data\GetFly()
+			if data\GetRace() == PPM2.RACE_UNICORN and data\GetUsingMagic()
 				if not hornGlowStatus[pl]
 					hornGlowStatus[pl] = {}
-				if not hornGlowStatus[pl].fly
-					hornGlowStatus[pl].fly = {
+				if not hornGlowStatus[pl].usingMagic
+					hornGlowStatus[pl].usingMagic = {
 						:data
 						isEnabled: true
 						attach: pl\LookupAttachment 'eyes'
@@ -228,7 +217,7 @@ do
 						emmiter: ParticleEmitter(EyePos())
 						emmiterProp: ParticleEmitter(EyePos())
 					}
-				with hornGlowStatus[pl].fly
+				with hornGlowStatus[pl].usingMagic
 					.frame = FrameNumber()
 					.target = pl
 					.tpos = pl\GetPos()

@@ -56,7 +56,8 @@ class NetworkedPonyData extends PPM2.NetworkedObject
 	@NetworkVar('NewSocksModel',    rSEnt, wSEnt, StrongEntity(-1), nil, false)
 
 	@NetworkVar('Fly',                  rBool,   wBool,                 false)
-	@NetworkVar('MagicAttack',          rBool,   wBool,                 false)
+	@NetworkVar('UsingMagic',           rBool,   wBool,                 false)
+	@NetworkVar('Attacking',            rBool,   wBool,                 false)
 	@NetworkVar('DisableTask',          rBool,   wBool,                 false)
 	@NetworkVar('UseFlexLerp',          rBool,   wBool,                  true)
 	@NetworkVar('FlexLerpMultiplier',   rFloat(0, 10),  wFloat,             1)
@@ -103,6 +104,7 @@ class NetworkedPonyData extends PPM2.NetworkedObject
 		@modelCached = ent\GetModel()
 		@ent = ent
 		@flightController = PPM2.PonyflyController(@)
+		@magicController = PPM2.PonyMagicController(@)
 		@entID = ent\EntIndex()
 		@lastLerpThink = RealTime()
 		@ModelChanges(@modelCached, @modelCached)
@@ -222,6 +224,10 @@ class NetworkedPonyData extends PPM2.NetworkedObject
 				@GenericDataChange(state)
 
 	GetFlightController: => @flightController
+
+	GetMagicController: =>
+		return nil unless PPM2.CanPonyUseMagic(@)
+		return @magicController
 
 	GetRenderController: =>
 		return if SERVER

@@ -48,6 +48,7 @@ class PonyflyController
 		return if not IsValid(@ent)
 		return if @lastState == status
 		@lastState = status
+		@controller\SetUsingMagic(status) if @controller\GetRace() == PPM2.RACE_UNICORN
 		if not status
 			{:p, :y, :r} = @ent\EyeAngles()
 			newAng = Angle(p, y, 0)
