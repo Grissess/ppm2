@@ -47,11 +47,16 @@ AddCSLuaFile_ = AddCSLuaFile
 include = (f) -> include_("autorun/ppm2/#{f}")
 AddCSLuaFile = (f) -> AddCSLuaFile_("autorun/ppm2/#{f}")
 
+include 'common/modifier_base.lua'
+include 'common/controller_children.lua'
+include 'common/sequence_base.lua'
+include 'common/sequence_holder.lua'
 include 'common/networked_object.lua'
 include 'common/registry.lua'
 include 'common/functions.lua'
 include 'common/bodygroup_controller.lua'
 include 'common/weight_controller.lua'
+include 'common/pony_expressions_controller.lua'
 include 'common/emotes.lua'
 include 'common/flex_controller.lua'
 include 'common/registry_data.lua'
@@ -67,6 +72,7 @@ if CLIENT
 	PPM2.ALTERNATIVE_RENDER = CreateConVar('ppm2_alternative_render', '0', {FCVAR_ARCHIVE}, 'Enable alternative render mode. This decreases FPS, enables compability with third-party BROKEN addons.')
 	file.CreateDir('ppm2')
 	file.CreateDir('ppm2/backups')
+	include 'client/bones_modifier.lua'
 	include 'client/data_instance.lua'
 	include 'client/materials_registry.lua'
 	include 'client/texture_controller.lua'
@@ -83,10 +89,6 @@ if CLIENT
 	for ent in *ents.GetAll()
 		if ent.isPonyLegsModel
 			ent\Remove()
-
-	hook.Add 'PAC3ResetBones', 'PPM2.ResetBones', (ent) ->
-		data = ent\GetPonyData()
-		hook.Call('PPM2_PACResetBones', nil, StrongEntity(ent), data) if data
 else
 	CreateConVar('ppm2_sv_draw_hands', '1', {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, 'Should draw hooves as viewmodel')
 	resource.AddWorkshop('933203381')
@@ -103,6 +105,10 @@ else
 	util.AddNetworkString('PPM2.RagdollEditFlex')
 	util.AddNetworkString('PPM2.RagdollEditEmote')
 
+	AddCSLuaFile 'common/modifier_base.lua'
+	AddCSLuaFile 'common/controller_children.lua'
+	AddCSLuaFile 'common/sequence_base.lua'
+	AddCSLuaFile 'common/sequence_holder.lua'
 	AddCSLuaFile 'common/networked_object.lua'
 	AddCSLuaFile 'common/registry.lua'
 	AddCSLuaFile 'common/registry_data.lua'
@@ -118,6 +124,8 @@ else
 	AddCSLuaFile 'common/laser.lua'
 	AddCSLuaFile 'common/size_controller.lua'
 	AddCSLuaFile 'common/compat.lua'
+	AddCSLuaFile 'common/pony_expressions_controller.lua'
+	AddCSLuaFile 'client/bones_modifier.lua'
 	AddCSLuaFile 'client/data_instance.lua'
 	AddCSLuaFile 'client/materials_registry.lua'
 	AddCSLuaFile 'client/texture_controller.lua'
