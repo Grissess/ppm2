@@ -56,6 +56,7 @@ class NetworkedPonyData extends PPM2.NetworkedObject
 	@NetworkVar('NewSocksModel',    rSEnt, wSEnt, StrongEntity(-1), nil, false)
 
 	@NetworkVar('Fly',                  rBool,   wBool,                 false)
+	@NetworkVar('MagicAttack',          rBool,   wBool,                 false)
 	@NetworkVar('DisableTask',          rBool,   wBool,                 false)
 	@NetworkVar('UseFlexLerp',          rBool,   wBool,                  true)
 	@NetworkVar('FlexLerpMultiplier',   rFloat(0, 10),  wFloat,             1)
@@ -297,7 +298,8 @@ else
 
 entMeta = FindMetaTable('Entity')
 entMeta.GetPonyData = =>
-	if @__PPM2_PonyData and StrongEntity(@__PPM2_PonyData\GetEntity()) ~= StrongEntity(@)
-		@__PPM2_PonyData\SetEntity(@)
-		@__PPM2_PonyData\SetupEntity(@) if CLIENT
-	return @__PPM2_PonyData
+	tbl = entMeta.GetTable(@)
+	if tbl.__PPM2_PonyData and StrongEntity(tbl.__PPM2_PonyData\GetEntity()) ~= StrongEntity(@)
+		tbl.__PPM2_PonyData\SetEntity(@)
+		tbl.__PPM2_PonyData\SetupEntity(@) if CLIENT
+	return tbl.__PPM2_PonyData

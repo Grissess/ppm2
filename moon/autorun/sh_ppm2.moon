@@ -61,6 +61,7 @@ include 'common/teleport.lua'
 include 'common/laser.lua'
 include 'common/size_controller.lua'
 include 'common/hooks.lua'
+include 'common/compat.lua'
 
 if CLIENT
 	PPM2.ALTERNATIVE_RENDER = CreateConVar('ppm2_alternative_render', '0', {FCVAR_ARCHIVE}, 'Enable alternative render mode. This decreases FPS, enables compability with third-party BROKEN addons.')
@@ -116,6 +117,7 @@ else
 	AddCSLuaFile 'common/teleport.lua'
 	AddCSLuaFile 'common/laser.lua'
 	AddCSLuaFile 'common/size_controller.lua'
+	AddCSLuaFile 'common/compat.lua'
 	AddCSLuaFile 'client/data_instance.lua'
 	AddCSLuaFile 'client/materials_registry.lua'
 	AddCSLuaFile 'client/texture_controller.lua'

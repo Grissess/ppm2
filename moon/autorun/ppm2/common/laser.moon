@@ -41,14 +41,17 @@ if SERVER
 		return if not data
 		return if not PPM2.CanPonyAttackWithMagic(data)
 
-		@SetNWBool('PPM2.MagicLaser', true)
+		data\SetMagicAttack(true)
 		@EmitSound('magic_beam')
 
 	concommand.Add '-ppm2_laser', =>
 		return if not IsValid(@)
 		return if not @IsPlayer()
+		return if not @IsPonyCached()
+		data = @GetPonyData()
+		return if not data
 
-		@SetNWBool('PPM2.MagicLaser', false)
+		data\SetMagicAttack(false)
 		@StopSound('magic_beam')
 
 	hook.Add 'Think', 'PPM2.MagicLaser', ->
@@ -60,27 +63,23 @@ if SERVER
 			-- XXX redundant
 
 			if not pl\IsPonyCached()
-				pl\SetNWBool('PPM2.MagicLaser', false)
 				pl\StopSound('magic_beam')
 				continue
 
 			data = pl\GetPonyData()
 			if not data
-				pl\SetNWBool('PPM2.MagicLaser', false)
 				pl\StopSound('magic_beam')
 				continue
 
 			if not PPM2.CanPonyAttackWithMagic(data)
-				pl\SetNWBool('PPM2.MagicLaser', false)
 				pl\StopSound('magic_beam')
 				continue
 
 			if not pl\Alive()
-				pl\SetNWBool('PPM2.MagicLaser', false)
 				pl\StopSound('magic_beam')
 				continue
 
-			if pl\GetNWBool('PPM2.MagicLaser')
+			if data\GetMagicAttack()
 				if pl.__ppm2_last_anger_anim == nil
 					pl.__ppm2_last_anger_anim = 0
 				if pl.__ppm2_last_anger_anim < CurTime()
@@ -100,7 +99,7 @@ if SERVER
 					tr.Entity\TakeDamageInfo(dmg)
 
 else
-	LASER_MATERIAL = Material('cable/xbeam')
+	LASER_MATERIAL = Material('effects/spark')
 
 	hook.Add 'PostDrawOpaqueRenderables', 'PPM2.MagicLaser', ->
 		for pl in *player.GetAll()
@@ -110,18 +109,19 @@ else
 			data = pl\GetPonyData()
 			continue if not data
 
-			if pl\GetNWBool('PPM2.MagicLaser')
+			if data\GetMagicAttack()
 				att = pl\GetAttachment(pl\LookupAttachment('eyes'))
 				tr = pl\GetEyeTrace()
 				offset = PPM2.HORN_FROM_EYE_ATTACH * data\GetPonySize()
 				offset\Rotate(att.Ang)
 				spos, epos = att.Pos + offset, tr.HitPos
 				dist = spos\Distance(epos)
-				texstart = 1 - (FrameNumber() / 10) % 1
 				color = PPM2.GetMagicAuraColor(data)
 				render.SetMaterial(LASER_MATERIAL)
-				render.SetColorModulation(color.r / 255, color.g / 255, color.b / 255)
-				render.DrawBeam(spos, epos, 3, texstart, texstart + dist / 64, color)
+				-- FIXME: For testing other textures with better mapping that can be colored
+				-- texstart = 1 - (FrameNumber() / 10) % 1
+				-- render.DrawBeam(spos, epos, 3, texstart, texstart + dist / 64, color)
+				render.DrawBeam(spos, epos, 4, 0.5, 0.75, color)
 				if not tr.HitSky
 					ed = with EffectData()
 						\SetOrigin(tr.HitPos)

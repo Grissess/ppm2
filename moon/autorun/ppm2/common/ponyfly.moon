@@ -48,7 +48,6 @@ class PonyflyController
 		return if not IsValid(@ent)
 		return if @lastState == status
 		@lastState = status
-		@ent\SetNWBool("PPM2.Flying", status)
 		if not status
 			{:p, :y, :r} = @ent\EyeAngles()
 			newAng = Angle(p, y, 0)

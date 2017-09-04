@@ -213,7 +213,7 @@ do
 			continue if not IsValid(pl)
 			data = pl\GetPonyData()
 			continue if not data
-			if data\GetRace() == PPM2.RACE_UNICORN and pl\GetNWBool("PPM2.Flying")
+			if data\GetRace() == PPM2.RACE_UNICORN and data\GetFly()
 				if not hornGlowStatus[pl]
 					hornGlowStatus[pl] = {}
 				if not hornGlowStatus[pl].fly

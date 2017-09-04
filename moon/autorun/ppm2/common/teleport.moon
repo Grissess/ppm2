@@ -35,7 +35,6 @@ if SERVER
 		return if not data
 		
 		if not PPM2.CanPonyTeleport(data)
-			PPM2.ChatPrint('You need to be a Unicorn or Alicorn to teleport!')
 			return
 
 		tr = util.TraceEntity({
