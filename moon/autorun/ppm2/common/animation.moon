@@ -114,7 +114,7 @@ class CubicBezierAnimationFunction extends AnimationFunction
 			.cp2x = @cp2.x
 			.cp2y = @cp2.y
 	SetSerializedData: (data) =>
-		return with super()
+		return with super(data)
 			.cp1 = Vector(data.cp1x, data.cp1y, 0)
 			.cp2 = Vector(data.cp2x, data.cp2y, 0)
 
@@ -154,9 +154,15 @@ class AnimationChannel extends Serializeable
 			@ent = ent
 		else
 			@ent = nil
+		@OnUpdateEntity()
+		@
 	GetEntity: => @ent if IsValid(@ent)
 
+	OnUpdateEntity: =>
+	IsValid: => @callback ~= NIL_FUNCTION
+
 	@CLASSES = {}
+	@CONCRETE = false
 	@__inherited: (child) =>
 		@CLASSES[child.__name] = child
 
@@ -214,9 +220,231 @@ class AnimationChannel extends Serializeable
 			return @@CLASSES[data.kind]()\SetSerializedData(data)
 AnimationChannel.CLASSES.AnimationChannel = AnimationChannel  -- lad
 
--- TODO: DataAnimationChannel, FlexAnimationChannel, BoneAnimationChannel
 class DataAnimationChannel extends AnimationChannel
+	@CONCRETE = true
+	new: (ent = nil, datum = '') =>
+		@datum = datum
+		super(ent)
 
+	OnUpdateEntity: =>
+		@descriptor = nil
+		@callback = NIL_FUNCTION
+
+		datum = @datum
+		descriptor = PPM2.PonyDataRegistry[datum]
+		return unless descriptor
+		return unless IsValid(@ent)
+		return unless ent\IsPonyCached()
+		data = ent\GetPonyData()
+		return unless data
+
+		@descriptor = descriptor
+		@callback = switch descriptor.type
+			when 'FLOAT'
+				(v) -> data['SetModifier' .. datum](data, v)
+			when 'INT'
+				(v) -> data['SetModifier' .. datum](data, math.floor(v))
+			when 'BOOLEAN'
+				(v) -> data['SetModifier' .. datum](data, v > 0)
+			else
+				NIL_FUNCTION
+	GetBounds: =>
+		return nil, nil unless @descriptor
+		with @desriptor
+			return .min, .max
+
+	GetSerializedData: =>
+		return with super()
+			.datum = @datum
+	SetSerializedData: (data) =>
+		return with super(data)
+			.datum = data.datum
+
+class FlexAnimationChannel extends AnimationChannel
+	@CONCRETE = true
+	new: (ent = nil, flex = '') =>
+		@flex = flex
+		super(ent)
+
+	OnUpdateEntity: =>
+		@flexid = nil
+		@callback = NIL_FUNCTION
+
+		return unless IsValid(@ent)
+		flexid = @ent\GetFlexIDByName(@flex)
+		return unless flexid ~= nil
+
+		@flexid = flexid
+		ent = @ent
+		@callback = (v) -> ent\SetFlexWeight(flexid, v)
+	GetBounds: =>
+		return nil, nil unless (@flexid and IsValid(@ent))
+		return @ent\GetFlexBounds(@flexid)
+
+	GetSerializedData: =>
+		return with super()
+			.flex = @flex
+	SetSerializedData: (data) =>
+		return with super(data)
+			.flex = data.flex
+
+class BodyGroupAnimationChannel extends AnimationChannel
+	@CONCRETE = true
+	new: (ent = nil, group = '') =>
+		@group = group
+		super(ent)
+
+	OnUpdateEntity: =>
+		@groupid = nil
+		@callback = NIL_FUNCTION
+
+		return unless IsValid(@ent)
+		groupid = nil
+		for grpinfo in *@ent\GetBodyGroups()
+			if grpinfo.name == @group
+				groupid = grpinfo.id
+				break
+		return unless groupid ~= nil
+
+		@groupid = groupid
+		ent = @ent
+		@callback = (v) -> ent\SetBodygroup(groupid, math.floor(v))
+	GetBounds: =>
+		return 0, nil unless (@groupid and IsValid(@ent))
+		return 0, @ent\GetBodygroupCount(@groupid) - 1
+
+	GetSerializedData: =>
+		return with super()
+			.group = @group
+	SetSerializedData: (data) =>
+		return with super(data)
+			.group = data.group
+
+class MultiChannelAnimationChannel extends AnimationChannel
+	@CHANNELS = {}
+	new: (ent = nil) =>
+		@channels = {k, AnimationChannel() for k in *@@CHANNELS}
+		super(ent)
+
+	@AGGREGATOR = ... -> {...}
+	Evaluate: (t) =>
+		cls = @@
+		return cls.AGGREGATOR(table.unpack([@channels[nm]\Evaluate(t) for nm in *@@CHANNELS]))
+
+	GetSerializedData: =>
+		data = super()
+		for k, v in pairs channels
+			data[k] = v\GetSerializedData()
+		return data
+	SetSerializedData: (data) =>
+		obj = super(data)
+		for k in *@@CHANNELS
+			if data[k]
+				obj[k] = AnimationChannel()\SetSerializedData(data[k])
+			else
+				obj[k] = AnimationChannel()
+
+class VectorAnimationChannel extends MultiChannelAnimationChannel
+	@CHANNELS = {'x', 'y', 'z'}
+	@AGGREGATOR = Vector
+
+class AngleAnimationChannel extends MultiChannelAnimationChannel
+	@CHANNELS = {'p', 'y', 'r'}
+	@AGGREGATOR = Angle
+
+class ColorAnimationChannel extends MultiChannelAnimationChannel
+	@CHANNELS = {'r', 'g', 'b', 'a'}
+	@AGGREGATOR = Color
+
+class BoneVectorAnimationChannel extends VectorAnimationChannel
+	new: (ent = nil, bone = '') =>
+		@bone = bone
+		super(ent)
+
+	OnUpdateEntity: =>
+		@boneid = nil
+		@callback = NIL_FUNCTION
+
+		return unless IsValid(@ent)
+		boneid = @ent\LookupBone(@bone)
+		return unless boneid
+
+		@boneid = boneid
+		ent = @ent
+		fnm = @@FUNCTION_NAME
+		@callback = (v) -> ent[fnm](ent, boneid, v) if fnm
+
+	GetSerializedData: =>
+		return with super()
+			.bone = @bone
+	SetSerializedData: (data) =>
+		return with super(data)
+			.bone = data.bone
+
+class BonePositionAnimationChannel extends BoneVectorAnimationChannel
+	@CONCRETE = true
+	@FUNCTION_NAME = 'ManipulateBonePosition'
+
+class BoneScaleAnimationChannel extends BoneVectorAnimationChannel
+	@CONCRETE = true
+	@FUNCTION_NAME = 'ManipulateBoneScale'
+
+class BoneAnglesAnimationChannel extends AngleAnimationChannel
+	@CONCRETE = true
+	new: (ent = nil, bone = '') =>
+		@bone = bone
+		super(ent)
+
+	OnUpdateEntity: =>
+		@boneid = nil
+		@callback = NIL_FUNCTION
+
+		return unless IsValid(@ent)
+		boneid = @ent\LookupBone(@bone)
+		return unless boneid
+
+		@boneid = boneid
+		ent = @ent
+		@callback = (v) -> ent\ManipulateBoneAngles(boneid, v)
+
+	GetSerializedData: =>
+		return with super()
+			.bone = @bone
+	SetSerializedData: (data) =>
+		return with super(data)
+			.bone = data.bone
+
+class ColorDataAnimationChannel extends ColorAnimationChannel
+	@CONCRETE = true
+	new: (ent = nil, datum = '') =>
+		@datum = datum
+		super(ent)
+
+	OnUpdateEntity: =>
+		@descriptor = nil
+		@callback = NIL_FUNCTION
+
+		datum = @datum
+		descriptor = PPM2.PonyDataRegistry[datum]
+		return unless descriptor
+		return unless IsValid(@ent)
+		return unless ent\IsPonyCached()
+		data = ent\GetPonyData()
+		return unless data
+
+		@descriptor = descriptor
+		@callback = switch descriptor.type
+			when 'COLOR'
+				(v) -> data['SetModifier' .. datum](data, v)
+			else
+				NIL_FUNCTION
+
+	GetSerializedData: =>
+		return with super()
+			.datum = @datum
+	SetSerializedData: (data) =>
+		return with super(data)
+			.datum = data.datum
 
 class Animation extends Serializeable
 	@ALL = setmetatable({}, {__mode = 'k'})
