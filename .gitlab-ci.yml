@@ -1,7 +1,16 @@
-buildmod:
-   script:
-     - mkdir lua
-     - sh build.sh
-   artifacts:
-      paths:
-        - lua/*
+
+before_script:
+  - apt update
+  - apt install luarocks -y
+  - luarocks install moonscript
+
+ppm2:
+  stage: build
+  when: always
+  script:
+    - rm -rf ./lua
+    - mkdir lua
+    - sh build.sh
+  artifacts:
+    paths:
+      - lua/*
