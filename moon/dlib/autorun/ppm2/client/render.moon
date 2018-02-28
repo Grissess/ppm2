@@ -275,7 +275,7 @@ do
 						.tpos = pl\GetPos()
 						.mins, .maxs, .center = PPM2.ScaledAABB(pl)
 
-	hook.Add 'Think', 'PPM2.HornEffects', =>
+	hook.Add 'Think', 'PPM2.HornEffects', ->
 		frame = FrameNumber()
 		for ent, statuses in pairs hornGlowStatus
 			for src, status in pairs statuses

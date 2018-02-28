@@ -35,12 +35,12 @@ sound.Add {
 
 sound.Add {
 	name: 'magic_teleport_start'
-	sound: 'ambient/energy/zap1.wav'
+	sound: 'ppm2/teleport.wav'
 }
 
 sound.Add {
 	name: 'magic_teleport_finish'
-	sound: 'ambient/energy/zap1.wav'
+	sound: 'ppm2/teleport.wav'
 }
 
 class MagicWeaponBase
@@ -53,14 +53,14 @@ class MagicWeaponBase
 		return unless IsValid(@ent)
 		data = @ent\GetPonyData()
 		return unless data
-		data\SetUsingMagic(true)
+		@controller\SetMagicLayerActive('weapon', true)
 		data\SetAttacking(true)
 
 	StopFiring: =>
 		return unless IsValid(@ent)
 		data = @ent\GetPonyData()
 		return unless data
-		data\SetUsingMagic(false)
+		@controller\SetMagicLayerActive('weapon', false)
 		data\SetAttacking(false)
 
 	Think: =>
@@ -137,6 +137,7 @@ class PonyMagicController
 		@controller = data
 		@ent = data.ent
 		@weapon = MagicLaserWeapon(@)  -- FIXME: Hardcoded
+		@layers = {}
 
 	GetWeapon: => @weapon
 	SetWeapon: (weapon) => @weapon = weapon
@@ -172,6 +173,12 @@ class PonyMagicController
 
 			@ent\EmitSound('magic_teleport_finish')
 
+	SetMagicLayerActive: (layer, active) =>
+		@layers[layer] = active and true or nil
+		@controller\SetUsingMagic(next(@layers) ~= nil)
+
+	ClearMagicLayers: => @layers = {}
+
 PPM2.PonyMagicController = PonyMagicController
 
 if SERVER
@@ -196,11 +203,11 @@ if SERVER
 		return if @GetPos()\Distance(tr.HitPos) < 32
 
 		@EmitSound('magic_teleport_start')
-		data\SetUsingMagic(true)
+		cont\SetMagicLayerActive('teleport', true)
 		delay = math.max(0.0, MAGIC_TELEPORT_DELAY\GetFloat())
 		timer.Simple delay, ->
 			cont\Teleport(tr.HitPos)
-			data\SetUsingMagic(false)
+			cont\SetMagicLayerActive('teleport', false)
 
 	concommand.Add '+ppm2_attack', =>
 		return unless ALLOW_MAGIC_ATTACK\GetBool()
@@ -240,6 +247,39 @@ if SERVER
 			weapon = cont\GetWeapon()
 			continue unless weapon
 			weapon\Think()
+
+	hook.Add 'PhysgunPickup', 'PPM2.MagicSounds', (ent) =>
+		return unless IsValid(@)
+		return unless @IsPlayer()
+		return unless @IsPonyCached()
+		data = @GetPonyData()
+		return unless data
+		return unless PPM2.CanPonyUseMagic(data)
+		cont = data\GetMagicController()
+		return unless cont
+		cont\SetMagicLayerActive('physgun', true)
+
+	hook.Add 'PhysgunDrop', 'PPM2.MagicSounds', (ent) =>
+		return unless IsValid(@)
+		return unless @IsPlayer()
+		return unless @IsPonyCached()
+		data = @GetPonyData()
+		return unless data
+		return unless PPM2.CanPonyUseMagic(data)
+		cont = data\GetMagicController()
+		return unless cont
+		cont\SetMagicLayerActive('physgun', false)
+
+	hook.Add 'PlayerDeath', 'PPM2.MagicSounds', (inflictor, attacker) =>
+		return unless IsValid(@)
+		return unless @\IsPlayer()
+		return unless @.__cachedIsPony
+		data = @GetPonyData()
+		return unless data
+		return unless PPM2.CanPonyUseMagic(data)
+		cont = data\GetMagicController()
+		return unless cont
+		cont\ClearMagicLayers()
 
 else  -- CLIENT
 	hook.Add 'PostDrawOpaqueRenderables', 'PPM2.MagicWeapon', ->

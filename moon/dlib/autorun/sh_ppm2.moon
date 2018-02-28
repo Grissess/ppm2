@@ -54,6 +54,7 @@ DLib.manifest({
 		'client/editor.lua'
 		'client/rag_edit.lua'
 		'client/render.lua'
+		'client/sound.lua'
 	}
 
 	server: {
