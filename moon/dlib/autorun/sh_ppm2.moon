@@ -20,9 +20,12 @@ PPM2 = PPM2 or {}
 
 DLib.manifest({
 	name: 'PPM/2'
-	prefix: 'dlib/autorun/ppm2'
+	prefix: 'ppm2'
 
 	shared: {
+		'common/modifier_base.lua'
+		'common/sequence_base.lua'
+		'common/sequence_holder.lua'
 		'common/controller_children.lua'
 		'common/registry.lua'
 		'common/functions.lua'
@@ -52,6 +55,7 @@ DLib.manifest({
 		'client/emotes.lua'
 		'client/player_menu.lua'
 		'client/editor.lua'
+		'client/editor3.lua'
 		'client/rag_edit.lua'
 		'client/render.lua'
 		'client/sound.lua'
