@@ -269,7 +269,7 @@ do
 							emmiterProp: ParticleEmitter(EyePos())
 						}
 					with hornGlowStatus[pl].usingMagic
-						.frame = FrameNumber()
+						.frame = FrameNumberL()
 						.target = pl
 						.tpos = pl\GetPos()
 						.mins, .maxs, .center = PPM2.ScaledAABB(pl)
@@ -365,7 +365,7 @@ do
 			hornGlowStatus[@] = {}
 		if not hornGlowStatus[@].physgun
 			hornGlowStatus[@].physgun = {
-				frame: FrameNumber()
+				frame: FrameNumberL()
 				prevStatus: data\GetHornGlow()
 				:data, :isEnabled, :hitPos, :target, :bone
 				tpos: @GetPos()
