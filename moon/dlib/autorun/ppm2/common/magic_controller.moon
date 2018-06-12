@@ -28,19 +28,15 @@ PPM2.CanPonyUseMagic = =>
 	)
 
 sound.Add {
-	name: 'magic_beam'
-	sound: 'ambient/energy/electric_loop.wav'
-	channel: CHAN_WEAPON
-}
-
-sound.Add {
 	name: 'magic_teleport_start'
 	sound: 'ppm2/teleport.wav'
+	pitch: {90, 120}
 }
 
 sound.Add {
 	name: 'magic_teleport_finish'
 	sound: 'ppm2/teleport.wav'
+	pitch: {95, 130}
 }
 
 class MagicWeaponBase
@@ -82,11 +78,9 @@ PPM2.MagicWeaponBase = MagicWeaponBase
 class MagicLaserWeapon extends MagicWeaponBase
 	@LASER_MATERIAL: Material('effects/spark')
 	StartFiring: =>
-		@ent\EmitSound('magic_beam') if IsValid(@ent)
 		super()
 
 	StopFiring: =>
-		@ent\StopSound('magic_beam') if IsValid(@ent)
 		super()
 
 	Think: =>
@@ -213,6 +207,7 @@ if SERVER
 		return unless ALLOW_MAGIC_ATTACK\GetBool()
 		return unless IsValid(@)
 		return unless @IsPlayer()
+		return unless @Alive()
 		return unless @IsPonyCached()
 		data = @GetPonyData()
 		return unless data
@@ -280,6 +275,8 @@ if SERVER
 		cont = data\GetMagicController()
 		return unless cont
 		cont\ClearMagicLayers()
+		weapon = cont\GetWeapon()
+		weapon\StopFiring() if weapon
 
 else  -- CLIENT
 	hook.Add 'PostDrawOpaqueRenderables', 'PPM2.MagicWeapon', ->

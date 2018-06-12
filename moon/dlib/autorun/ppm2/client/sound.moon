@@ -20,7 +20,7 @@ import GetPonyData from FindMetaTable('Entity')
 sound.Add {
 	name: 'magic_loop'
 	sound: 'ppm2/magic_loop.wav'
-	channel: CHAN_WEAPON
+	channel: CHAN_AUTO
 }
 
 do
