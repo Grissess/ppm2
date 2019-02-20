@@ -1,22 +1,27 @@
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 ADVANCED_MODE = CreateConVar('ppm2_editor_advanced', '0', {FCVAR_ARCHIVE}, 'Show all options. Keep in mind Editor3 acts different with this option.')
 ENABLE_FULLBRIGHT = CreateConVar('ppm2_editor_fullbright', '1', {FCVAR_ARCHIVE}, 'Disable lighting in editor')
-DISTANCE_LIMIT = CreateConVar('ppm2_sv_editor_dist', '0', {FCVAR_NOTIFY, FCVAR_REPLICATED}, 'Distance limit in PPM/2 Editor/2')
+DISTANCE_LIMIT = CreateConVar('ppm2_sv_editor_dist', '0', {FCVAR_NOTIFY, FCVAR_REPLICATED}, 'Distance limit in PPM/2 Editor/2. 0 - means default (400)')
 
 BackgroundColors = {
 	Color(200, 200, 200)
@@ -211,7 +216,7 @@ MODEL_BOX_PANEL = {
 
 		render.DrawQuadEasy(@FLOOR_VECTOR, @FLOOR_ANGLE, 7000, 7000, @FLOOR_COLOR)
 
-		for {pos, ang, w, h} in *@DRAW_WALLS
+		for _, {pos, ang, w, h} in ipairs @DRAW_WALLS
 			render.DrawQuadEasy(pos, ang, w, h, @WALL_COLOR)
 
 		if ENABLE_FULLBRIGHT\GetBool()
@@ -271,6 +276,8 @@ CALC_VIEW_PANEL = {
 		@right = false
 		@up = false
 		@down = false
+		@lastPosSend = 0
+		@prevPos = Vector()
 
 		@realX, @realY = 0, 0
 		@realW, @realH = ScrW(), ScrH()
@@ -288,7 +295,7 @@ CALC_VIEW_PANEL = {
 	CalcView: (ply = LocalPlayer(), origin = Vector(0, 0, 0), angles = Angle(0, 0, 0), fov = @fov, znear = 0, zfar = 1000) =>
 		return hook.Remove('CalcView', @) if not @IsValid()
 		return if not @IsVisible()
-		origin, angles = LocalToWorld(@drawPos, @drawAngle, LocalPlayer()\GetPos(), Angle(0, LocalPlayer()\EyeAngles().y, 0))
+		origin, angles = LocalToWorld(@drawPos, @drawAngle, LocalPlayer()\GetPos(), Angle(0, LocalPlayer()\EyeAnglesFixed().y, 0))
 		newData = {:angles, :origin, fov: @fov, :znear, :zfar, drawviewer: true}
 		return newData
 
@@ -303,7 +310,7 @@ CALC_VIEW_PANEL = {
 
 			with ply\PPMBonesModifier()
 				\ResetBones()
-				hook.Call('PPM2.SetupBones', nil, StrongEntity(ply), data)
+				hook.Call('PPM2.SetupBones', nil, ply, data)
 				\Think(true)
 
 		return
@@ -367,7 +374,8 @@ CALC_VIEW_PANEL = {
 			{:pitch, :yaw, :roll} = @drawAngle
 			yaw -= deltaX * .3
 			pitch += deltaY * .3
-			@drawAngle = Angle(pitch, yaw, roll)
+			@drawAngle = Angle(pitch\clamp(-89, 89), yaw, roll)
+			@drawAngle\Normalize()
 
 		speedModifier = 1
 		speedModifier *= 2 if @fast
@@ -389,11 +397,20 @@ CALC_VIEW_PANEL = {
 			@drawPos += @drawAngle\Up() * speedModifier * delta * 100
 
 		limitDist = DISTANCE_LIMIT\GetFloat()
-		if limitDist > 0
-			lenDist = @drawPos\Length()
-			if lenDist > limitDist
-				@drawPos\Normalize()
-				@drawPos = @drawPos * limitDist
+		limitDist = 400 if limitDist <= 0
+		lenDist = @drawPos\Length()
+
+		if lenDist > limitDist
+			@drawPos\Normalize()
+			@drawPos = @drawPos * limitDist
+
+		if @drawPos ~= @prevPos and @lastPosSend < RealTimeL()
+			@lastPosSend = RealTimeL() + 0.1
+			@prevPos = Vector(@drawPos)
+			net.Start('PPM2.EditorCamPos')
+			net.WriteVector(@drawPos)
+			net.WriteAngle(@drawAngle)
+			net.SendToServer()
 
 		if @IsActive()
 			if not @resizedToScreen
@@ -437,7 +454,7 @@ TATTOO_INPUT_GRABBER = {
 	DataGet: (key = '', ...) => @targetData['Get' .. key .. @targetID](@targetData, ...)
 	DataAdd: (key = '', val = 0) => @DataSet(key, @DataGet(key) + val)
 
-	TriggerUpdate: => pnl\DoUpdate() for pnl in *@panelsToUpdate when IsValid(pnl)
+	TriggerUpdate: => pnl\DoUpdate() for _, pnl in ipairs @panelsToUpdate when IsValid(pnl)
 
 	Init: =>
 		@targetID = 1
@@ -588,7 +605,7 @@ PPM2.EditorBuildNewFilesPanel = =>
 			@frame.DoUpdate()
 			@unsavedChanges = false
 			@frame.unsavedChanges = false
-			@frame\SetTitle("#{fil} - PPM2 Pony Editor")
+			@frame\SetTitle('gui.ppm2.editor.generic.title_file', fil)
 		if @unsavedChanges
 			Derma_Query(
 				'gui.ppm2.editor.io.warn.text',
@@ -606,7 +623,7 @@ PPM2.EditorBuildNewFilesPanel = =>
 		list\Clear()
 		files, dirs = file.Find('ppm2/*.dat', 'DATA')
 		matchBak = '.bak.dat'
-		for fil in *files
+		for _, fil in ipairs files
 			if fil\sub(-#matchBak) ~= matchBak
 				fil2 = fil\sub(1, #fil - 4)
 				line = list\AddLine(fil2)
@@ -644,6 +661,7 @@ PPM2.EditorBuildNewFilesPanel = =>
 						surface.DrawRect(x, y, 512, 512)
 						DLib.HUDCommons.DrawLoading(x + 40, y + 40, 432, color_white)
 	@rebuildFileList()
+	list.rebuildFileList = @rebuildFileList
 
 PPM2.EditorBuildOldFilesPanel = =>
 	@Label('gui.ppm2.editor.io.warn.oldfile')
@@ -663,7 +681,7 @@ PPM2.EditorBuildOldFilesPanel = =>
 			@frame.DoUpdate()
 			@unsavedChanges = true
 			@frame.unsavedChanges = true
-			@frame\SetTitle("#{newData\GetFilename()} - PPM2 Pony Editor; *Unsaved changes*")
+			@frame\SetTitle('gui.ppm2.editor.generic.title_file_unsaved', newData\GetFilename())
 		if @unsavedChanges
 			Derma_Query(
 				'gui.ppm2.editor.io.warn.text',
@@ -679,7 +697,7 @@ PPM2.EditorBuildOldFilesPanel = =>
 	@rebuildFileList = ->
 		list\Clear()
 		files, dirs = file.Find('ppm/*', 'DATA')
-		for fil in *files
+		for _, fil in ipairs files
 			fil2 = fil\sub(1, #fil - 4)
 			line = list\AddLine(fil2)
 			line.file = fil
@@ -716,6 +734,7 @@ PPM2.EditorBuildOldFilesPanel = =>
 					surface.DrawRect(x, y, 512, 512)
 					DLib.HUDCommons.DrawLoading(x + 40, y + 40, 432, color_white)
 	@rebuildFileList()
+	list.rebuildFileList = @rebuildFileList
 
 PPM2.EditorFileManipFuncs = (list, prefix, openFile) ->
 	list.DoDoubleClick = (pnl, rowID, line) ->
@@ -728,7 +747,7 @@ PPM2.EditorFileManipFuncs = (list, prefix, openFile) ->
 		menu\AddOption('Delete', ->
 			confirm = ->
 				file.Delete("#{prefix}/#{fil}.dat")
-				@rebuildFileList()
+				list\rebuildFileList()
 			Derma_Query(
 				'gui.ppm2.editor.io.delete.confirm',
 				'gui.ppm2.editor.io.delete.title',
@@ -773,7 +792,7 @@ PANEL_SETTINGS_BASE = {
 	GetTargetData: => @data
 	TargetData: => @data
 	SetTargetData: (val) => @data = val
-	DoUpdate: => func() for func in *@updateFuncs
+	DoUpdate: => func() for _, func in ipairs @updateFuncs
 
 	CreateResetButton: (name = 'NULL', option = 'NULL', parent) =>
 		@createdPanels += 1
@@ -782,7 +801,7 @@ PANEL_SETTINGS_BASE = {
 				\SetParent(@resetCollapse)
 				\Dock(TOP)
 				\DockMargin(2, 0, 2, 0)
-				\SetText('gui.ppm2.editor.reset.' .. option\lower())
+				\SetText('gui.ppm2.editor.reset_value', DLib.i18n.localize(option))
 				.DoClick = ->
 					dt = @GetTargetData()
 					dt['Reset' .. option](dt)
@@ -792,7 +811,7 @@ PANEL_SETTINGS_BASE = {
 			with button = vgui.Create('DButton', parent)
 				\SetParent(parent)
 				\DockMargin(0, 0, 0, 0)
-				\SetText('Reset ' .. name)
+				\SetText('gui.ppm2.editor.reset_value', DLib.i18n.localize(option))
 				\SetSize(0, 0)
 				\SetTextColor(Color(255, 255, 255))
 				.Paint = (w, h) =>
@@ -965,9 +984,9 @@ PANEL_SETTINGS_BASE = {
 				\SetSortItems(false)
 				\SetValue(@GetTargetData()["Get#{option}Enum"](@GetTargetData())) if @GetTargetData()
 				if choices
-					\AddChoice(choice) for choice in *choices
+					\AddChoice(choice) for _, choice in ipairs choices
 				else
-					\AddChoice(choice) for choice in *@GetTargetData()["Get#{option}Types"](@GetTargetData()) if @GetTargetData() and @GetTargetData()["Get#{option}Types"]
+					\AddChoice(choice) for _, choice in ipairs @GetTargetData()["Get#{option}Types"](@GetTargetData()) if @GetTargetData() and @GetTargetData()["Get#{option}Types"]
 				.OnSelect = (pnl = box, index = 1, value = '', data = value) ->
 					index -= 1
 					data = @GetTargetData()
@@ -1090,7 +1109,7 @@ EditorPages = {
 				@CheckBox('gui.ppm2.editor.misc.no_flexes2', 'NoFlex')
 				@Label('gui.ppm2.editor.misc.no_flexes_desc')
 				flexes = @Spoiler('gui.ppm2.editor.misc.flexes')
-				for {:flex, :active} in *PPM2.PonyFlexController.FLEX_LIST
+				for _, {:flex, :active} in ipairs PPM2.PonyFlexController.FLEX_LIST
 					@CheckBox("Disable #{flex} control", "DisableFlex#{flex}")\SetParent(flexes) if active
 				flexes\SizeToContents()
 	}
@@ -1298,7 +1317,7 @@ EditorPages = {
 				@CheckBox('gui.ppm2.editor.eyes.separate', 'SeparateEyes')
 			eyes = {''}
 			eyes = {'', 'Left', 'Right'} if ADVANCED_MODE\GetBool()
-			for publicName in *eyes
+			for _, publicName in ipairs eyes
 				@Hr()
 
 				prefix = ''
@@ -1433,10 +1452,10 @@ EditorPages = {
 				@ColorBox("gui.ppm2.editor.url_mane.color#{i}", "ManeURLColor#{i}")
 				@Hr()
 
-			for i = 1, ADVANCED_MODE\GetBool() and PPM2.MAX_BODY_DETAILS or 2
-				@Label('gui.ppm2.editor.body.detail.url.desc' .. i)
-				@URLInput("BodyDetailURL#{i}")
-				@ColorBox('gui.ppm2.editor.body.detail.url.color' .. i, "BodyDetailURLColor#{i}")
+			for i = 1, ADVANCED_MODE\GetBool() and 6 or 1
+				@Label("gui.ppm2.editor.url_tail.desc#{i}")
+				@URLInput("TailURL#{i}")
+				@ColorBox("gui.ppm2.editor.url_tail.color#{i}", "TailURLColor#{i}")
 				@Hr()
 
 			@Label('gui.ppm2.editor.mane.newnotice')
@@ -1619,8 +1638,9 @@ PPM2.EditorCreateTopButtons = (isNewEditor = false, addFullbright = false) =>
 			@data\Save()
 			@unsavedChanges = false
 			@model.unsavedChanges = false if IsValid(@model)
-			@SetTitle("#{@data\GetFilename() or '%ERRNAME%'} - PPM2 Pony Editor")
-			@panels.saves.rebuildFileList() if @panels.saves and @panels.saves.rebuildFileList
+			@SetTitle('gui.ppm2.editor.generic.title_file', @data\GetFilename() or '%ERRNAME%')
+			@panels.saves.rebuildFileList() if @panels and @panels.saves and @panels.saves.rebuildFileList
+			@saves.rebuildFileList() if @saves and @saves.rebuildFileList
 			callback(txt)
 		Derma_StringRequest('gui.ppm2.editor.io.save.button', 'gui.ppm2.editor.io.save.text', @data\GetFilename(), confirm)
 
@@ -1653,7 +1673,7 @@ PPM2.EditorCreateTopButtons = (isNewEditor = false, addFullbright = false) =>
 		with @selectModelBox = vgui.Create('DComboBox', @)
 			\SetSize(120, 20)
 			\SetValue(editorModelSelect)
-			\AddChoice(choice) for choice in *{'default', 'cppm', 'new'}
+			\AddChoice(choice) for _, choice in ipairs {'default', 'cppm', 'new'}
 			.OnSelect = (pnl = box, index = 1, value = '', data = value) ->
 				@SetDeleteOnClose(true)
 				RunConsoleCommand('ppm2_editor_model', value)
@@ -1751,7 +1771,7 @@ PPM2.OpenNewEditor = ->
 	@lblTitle = vgui.Create('DLabel', @)
 	@lblTitle\SetPos(5, 0)
 	@lblTitle\SetSize(300, 20)
-	@SetTitle = (text = '') => @lblTitle\SetText(text)
+	@SetTitle = (text = '', ...) => @lblTitle\SetText(text, ...)
 	@GetTitle = => @lblTitle\GetText()
 	@deleteOnClose = false
 	@SetDeleteOnClose = (val = false) => @deleteOnClose = val
@@ -1816,7 +1836,7 @@ PPM2.OpenNewEditor = ->
 
 	createdPanels = 9
 
-	for {:name, :func, :internal, :display} in *EditorPages
+	for _, {:name, :func, :internal, :display} in ipairs EditorPages
 		continue if display and not display(true)
 		pnl = vgui.Create('PPM2SettingsBase', @menus)
 		@menus\AddSheet(name, pnl)
@@ -1853,7 +1873,6 @@ PPM2.OpenOldEditor = ->
 	W, H = ScrW() - 25, ScrH() - 25
 	@SetSize(W, H)
 	@Center()
-	@SetTitle('PPM2 Pony Editor')
 	@SetDeleteOnClose(false)
 	PPM2.OldEditorFrame = @
 
@@ -1908,7 +1927,7 @@ PPM2.OpenOldEditor = ->
 
 	createdPanels = 17
 
-	for {:name, :func, :internal, :display} in *EditorPages
+	for _, {:name, :func, :internal, :display} in ipairs EditorPages
 		continue if display and not display(false)
 		pnl = vgui.Create('PPM2SettingsBase', @menus)
 		@menus\AddSheet(name, pnl)
@@ -1951,38 +1970,26 @@ IconData =
 		window\Remove()
 		RunConsoleCommand('ppm2_editor')
 
-IconDataOld =
-	title: 'PPM/2 Old Editor',
-	icon: 'gui/ppm2_icon.png',
-	width: 960,
-	height: 700,
-	onewindow: true,
-	init: (icon, window) ->
-		window\Remove()
-		RunConsoleCommand('ppm2_old_editor')
-
 list.Set('DesktopWindows', 'PPM2', IconData)
-list.Set('DesktopWindows', 'PPM2_Old', IconDataOld)
 CreateContextMenu() if IsValid(g_ContextMenu)
 
 hook.Add 'PopulateToolMenu', 'PPM2.PonyPosing', -> spawnmenu.AddToolMenuOption 'Utilities', 'User', 'PPM2.Posing', 'PPM2', '', '', =>
 	return if not @IsValid()
 	@Clear()
-	@Button 'Spawn new model', 'gm_spawn', 'models/ppm/player_default_base_new.mdl'
-	@Button 'Spawn new nj model', 'gm_spawn', 'models/ppm/player_default_base_new_nj.mdl'
-	@Button 'Spawn old model', 'gm_spawn', 'models/ppm/player_default_base.mdl'
-	@Button 'Spawn old nj model', 'gm_spawn', 'models/ppm/player_default_base_nj.mdl'
-	@Button 'Spawn CPPM model', 'gm_spawn', 'models/cppm/player_default_base.mdl'
-	@Button 'Spawn CPPM nj model', 'gm_spawn', 'models/cppm/player_default_base_nj.mdl'
-	@Button 'Cleanup unused models', 'ppm2_cleanup'
-	@Button 'Reload local data', 'ppm2_reload'
-	@Button 'Require data from server', 'ppm2_require'
-	@CheckBox 'Draw hooves as hands', 'ppm2_cl_draw_hands'
-	@CheckBox 'Alternative render', 'ppm2_alternative_render'
-	@CheckBox 'No hoofsounds', 'ppm2_cl_no_hoofsound'
-	@CheckBox 'Disable flexes (emotes)', 'ppm2_disable_flexes'
-	@CheckBox 'Enable PPM2 editor advanced mode', 'ppm2_editor_advanced'
-	@CheckBox 'Enable real time eyes reflections', 'ppm2_cl_reflections'
-	@NumSlider 'Reflections draw distance', 'ppm2_cl_reflections_drawdist', 0, 1024, 0
-	@NumSlider 'Reflections render distance', 'ppm2_cl_reflections_renderdist', 32, 4096, 0
-	@CheckBox 'Double jump activate flight', 'ppm2_flight_djump'
+	@Button 'gui.ppm2.spawnmenu.newmodel', 'gm_spawn', 'models/ppm/player_default_base_new.mdl'
+	@Button 'gui.ppm2.spawnmenu.newmodelnj', 'gm_spawn', 'models/ppm/player_default_base_new_nj.mdl'
+	@Button 'gui.ppm2.spawnmenu.oldmodel', 'gm_spawn', 'models/ppm/player_default_base.mdl'
+	@Button 'gui.ppm2.spawnmenu.oldmodelnj', 'gm_spawn', 'models/ppm/player_default_base_nj.mdl'
+	@Button 'gui.ppm2.spawnmenu.cppmmodel', 'gm_spawn', 'models/cppm/player_default_base.mdl'
+	@Button 'gui.ppm2.spawnmenu.cppmmodelnj', 'gm_spawn', 'models/cppm/player_default_base_nj.mdl'
+	@Button 'gui.ppm2.spawnmenu.cleanup', 'ppm2_cleanup'
+	@Button 'gui.ppm2.spawnmenu.reload', 'ppm2_reload'
+	@Button 'gui.ppm2.spawnmenu.require', 'ppm2_require'
+	@CheckBox 'gui.ppm2.spawnmenu.drawhooves', 'ppm2_cl_draw_hands'
+	@CheckBox 'gui.ppm2.spawnmenu.nohoofsounds', 'ppm2_cl_no_hoofsound'
+	@CheckBox 'gui.ppm2.spawnmenu.noflexes', 'ppm2_disable_flexes'
+	@CheckBox 'gui.ppm2.spawnmenu.advancedmode', 'ppm2_editor_advanced'
+	@CheckBox 'gui.ppm2.spawnmenu.reflections', 'ppm2_cl_reflections'
+	@NumSlider 'gui.ppm2.spawnmenu.reflections_drawdist', 'ppm2_cl_reflections_drawdist', 0, 1024, 0
+	@NumSlider 'gui.ppm2.spawnmenu.reflections_renderdist', 'ppm2_cl_reflections_renderdist', 32, 4096, 0
+	@CheckBox 'gui.ppm2.spawnmenu.doublejump', 'ppm2_flight_djump'

@@ -1,33 +1,39 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 class PPM2.SequenceHolder extends PPM2.ModifierBase
 	@__inherited: (child) =>
 		super(child)
 		return if not child.SEQUENCES
 		seq.numid = i for i, seq in ipairs child.SEQUENCES
-		child.SEQUENCES_TABLE = {seq.name, seq for seq in *child.SEQUENCES}
-		child.SEQUENCES_TABLE[seq.numid] = seq for seq in *child.SEQUENCES
+		child.SEQUENCES_TABLE = {seq.name, seq for _, seq in ipairs child.SEQUENCES}
+		child.SEQUENCES_TABLE[seq.numid] = seq for _, seq in ipairs child.SEQUENCES
 
 	@NEXT_HOOK_ID = 0
 	@SequenceObject = PPM2.SequenceBase
 
 	new: =>
 		super()
+		@isValid = true
 		@hooks = {}
 		@@NEXT_HOOK_ID += 1
 		@fid = @@NEXT_HOOK_ID
@@ -41,7 +47,7 @@ class PPM2.SequenceHolder extends PPM2.ModifierBase
 		return false if not @@SEQUENCES_TABLE
 		return false if not @isValid
 		return @currentSequences[seqID] if @currentSequences[seqID]
-		return if not @@SEQUENCES_TABLE[seqID]
+		return false if not @@SEQUENCES_TABLE[seqID]
 		SequenceObject = @@SequenceObject
 		@currentSequences[seqID] = SequenceObject(@, @@SEQUENCES_TABLE[seqID])
 		@currentSequences[seqID]\SetTime(time) if time
@@ -78,15 +84,15 @@ class PPM2.SequenceHolder extends PPM2.ModifierBase
 	ResetSequences: =>
 		return false if not @@SEQUENCES
 		return false if not @isValid
-		seq\Stop() for seq in *@currentSequencesIterable
+		seq\Stop() for _, seq in ipairs @currentSequencesIterable
 		@currentSequences = {}
 		@currentSequencesIterable = {}
-		@StartSequence(seq.name) for seq in *@@SEQUENCES when seq.autostart
+		@StartSequence(seq.name) for _, seq in ipairs @@SEQUENCES when seq.autostart
 
 	Reset: => @ResetSequences()
 
 	RemoveHooks: =>
-		for iHook in *@hooks
+		for _, iHook in ipairs @hooks
 			hook.Remove iHook, @hookID
 
 	PlayerRespawn: =>
@@ -102,9 +108,7 @@ class PPM2.SequenceHolder extends PPM2.ModifierBase
 	Hook: (id, func) =>
 		return if not @isValid
 		newFunc = (...) ->
-			if not IsValid(@ent)
-				@ent = @GetData().ent
-			if not IsValid(@ent) or @GetData()\GetData() ~= @ent\GetPonyData()
+			if not IsValid(@GetEntity()) or @GetData()\GetData() ~= @GetEntity()\GetPonyData()
 				@RemoveHooks()
 				return
 			func(@, ...)
@@ -112,16 +116,13 @@ class PPM2.SequenceHolder extends PPM2.ModifierBase
 		hook.Add id, @hookID, newFunc
 		table.insert(@hooks, id)
 
-	Think: (ent = @ent) =>
+	Think: (ent = @GetEntity()) =>
 		return if not @IsValid()
 		delta = RealTimeL() - @lastThink
 		@lastThink = RealTimeL()
 		@lastThinkDelta = delta
-		if @nwController and not IsValid(@ent)
-			@ent = @nwController.ent
-			ent = @ent
 		return if not IsValid(ent) or ent\IsDormant()
-		for seq in *@currentSequencesIterable
+		for _, seq in ipairs @currentSequencesIterable
 			if not seq\IsValid()
 				@EndSequence(seq\GetName(), false)
 				break

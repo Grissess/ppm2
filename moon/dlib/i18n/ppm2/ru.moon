@@ -1,19 +1,28 @@
 
--- Copyright (C) 2017-2018 DBot
+-- Copyright (C) 2017-2019 DBot
 
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
 
---     http://www.apache.org/licenses/LICENSE-2.0
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
 
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 -- editor stuffs
+
+gui.ppm2.dxlevel.not_supported = 'Выставленный уровень DirectX™ слишком низок для работы PPM/2. Необходимый минимум - 9.0.\nДолжно быть, вы используете DirectX™ ниже 9.0 по причине видеокарты 2004 года или плохих драйверов.\nНо если вы используете DirectX™ ниже 9.0 ради FPS - то это тупо ещё большая нагрузка на видеокарту, так как\nв gmod FPS зависит прямо от нагрузки ЦП другими аддонами от Васи228, которые, кстати, с этим очень хорошо справляются.'
+gui.ppm2.dxlevel.toolow = 'Уровень технологии DirectX™ слишком низок для работы PPM/2'
 
 gui.ppm2.editor.eyes.separate = 'Использовать разные настройки для глаз'
 gui.ppm2.editor.eyes.url = 'URL текстура глаза'
@@ -24,7 +33,7 @@ gui.ppm2.editor.eyes.lightwarp = "Lightwarp"
 gui.ppm2.editor.eyes.desc1 = "Lightwarp URL текстура\nОБЯЗАНА БЫТЬ 256x16!"
 gui.ppm2.editor.eyes.desc2 = "Сила 'Зеркалья' у глаз\nЭтот параметр влияет на отражения в режиме Отражений в реальном времени\nЗа это отвечает переменная клиента ppm2_cl_reflections\nОстальные игроки увидят отражения только с ppm2_cl_reflections 1\n0 - матовая поверхность; 1 - зеркальная"
 
-for {tprefix, prefix} in *{{'def', ''}, {'left', 'Left '}, {'right', 'Right '}}
+for _, {tprefix, prefix} in ipairs {{'def', ''}, {'left', 'Left '}, {'right', 'Right '}}
 	gui.ppm2.editor.eyes[tprefix].lightwarp.shader = "#{prefix}Использовать шейдер EyeRefract"
 	gui.ppm2.editor.eyes[tprefix].lightwarp.cornera = "#{prefix}Испольщовать Cornera диффуз текстуру"
 	gui.ppm2.editor.eyes[tprefix].lightwarp.glossiness = "#{prefix}Стеклянность (?)"
@@ -340,8 +349,7 @@ gui.ppm2.editor.tattoo.help = "Что бы выйти из режима реда
 Правая и левая стрелки отвечают за размер по горизонтали
 Q/E отвечают за поворот"
 
-for name, data in pairs PPM2.PonyDataRegistry
-	gui.ppm2.editor.reset[data.getFunc\lower()] = 'Сбросить ' .. data.getFunc
+gui.ppm2.editor.reset_value = 'Сбросить %s'
 
 gui.ppm2.editor.phong.info = 'Больше информации про Фонг на вики'
 gui.ppm2.editor.phong.exponent = 'Фонговая экспонента - насолько сильна отражающая способность\nЗначение около нуля делает почти зеркальную\nповерхность кожи (робот глянцевой краской)'
@@ -420,3 +428,26 @@ gui.ppm2.editor.intro.text = "Представляю вам... своего... �
 	"Товар не подлежит возврату."
 gui.ppm2.editor.intro.title = 'Добро пожаловать, Биологическое сущес... Человек!'
 gui.ppm2.editor.intro.okay = "к, я все равно это никогда не читаю"
+
+message.ppm2.debug.race_condition = 'У NetworkedPonyData состояние гонки с движком игры. Ожидаю...'
+
+gui.ppm2.spawnmenu.newmodel = 'Создать новую модель'
+gui.ppm2.spawnmenu.newmodelnj = 'Создать новую модель NJ'
+gui.ppm2.spawnmenu.oldmodel = 'Создать старую модель'
+gui.ppm2.spawnmenu.oldmodelnj = 'Создать старую модель NJ'
+gui.ppm2.spawnmenu.cppmmodel = 'Создать CPPM модель'
+gui.ppm2.spawnmenu.cppmmodelnj = 'Создать CPPM модель NJ'
+gui.ppm2.spawnmenu.cleanup = 'Принудительно собрать мусор'
+gui.ppm2.spawnmenu.reload = 'Перезагрузить вашу пони'
+gui.ppm2.spawnmenu.require = 'Запросить данные с сервера'
+gui.ppm2.spawnmenu.drawhooves = 'Отрисовывать копыта как руки'
+gui.ppm2.spawnmenu.nohoofsounds = 'Отключить звуки копыт'
+gui.ppm2.spawnmenu.noflexes = 'Отключить flexes (эмоции)'
+gui.ppm2.spawnmenu.advancedmode = 'Включить расширенный режим редактора'
+gui.ppm2.spawnmenu.reflections = 'Включить отражения в реальном времени'
+gui.ppm2.spawnmenu.reflections_drawdist = 'Дистанция для отрисовки'
+gui.ppm2.spawnmenu.reflections_renderdist = 'Точность отражений'
+gui.ppm2.spawnmenu.doublejump = 'Двойной прыжок включает режим полета'
+
+tip.ppm2.in_editor = 'В редакторе PPM/2'
+tip.ppm2.camera = "PPM/2 камера игрока %s"

@@ -1,19 +1,24 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 class ExpressionSequence extends PPM2.SequenceBase
 	new: (controller, data) =>
@@ -26,22 +31,20 @@ class ExpressionSequence extends PPM2.SequenceBase
 			'flexes': @flexNames
 		} = data
 
-		@ent = controller.ent
 		@knownBonesSequences = {}
 		@controller = controller
 
 		@flexStates = {}
 		@bonesNames = @bonesNames or {}
-		@bonesFuncsPos = ['SetModifier' .. boneName .. 'Position' for boneName in *@bonesNames]
-		@bonesFuncsScale = ['SetModifier' .. boneName .. 'Scale' for boneName in *@bonesNames]
-		@bonesFuncsAngles = ['SetModifier' .. boneName .. 'Angles' for boneName in *@bonesNames]
+		@bonesFuncsPos = ['SetModifier' .. boneName .. 'Position' for _, boneName in ipairs @bonesNames]
+		@bonesFuncsScale = ['SetModifier' .. boneName .. 'Scale' for _, boneName in ipairs @bonesNames]
+		@bonesFuncsAngles = ['SetModifier' .. boneName .. 'Angles' for _, boneName in ipairs @bonesNames]
 		@ponydata = @controller.renderController\GetData()
 		@ponydataID = @ponydata\GetModifierID(@name .. '_emote')
 		@RestartChildren()
 		@Launch()
 
 	GetController: => @controller
-	GetEntity: => @ent
 
 	SetControllerModifier: (name = '', val) => @ponydata['SetModifier' .. name](@ponydata, @ponydataID, val)
 
@@ -50,19 +53,19 @@ class ExpressionSequence extends PPM2.SequenceBase
 			if flexController = @controller.renderController\GetFlexController()
 				@flexController = flexController
 				if type(@flexSequence) == 'table'
-					for seq in *@flexSequence
+					for _, seq in ipairs @flexSequence
 						flexController\StartSequence(seq, @time)\SetInfinite(@GetInfinite())
 				else
 					flexController\StartSequence(@flexSequence, @time)\SetInfinite(@GetInfinite())
 				if @flexNames
-					@flexStates = [{flexController\GetFlexState(flex), flexController\GetFlexState(flex)\GetModifierID(@name .. '_emote')} for flex in *@flexNames]
+					@flexStates = [{flexController\GetFlexState(flex), flexController\GetFlexState(flex)\GetModifierID(@name .. '_emote')} for _, flex in ipairs @flexNames]
 
 		@knownBonesSequences = {}
-		if @bonesSequence
-			if bones = @ent\PPMBonesModifier()
-				@bonesController = bones
+		if bones = @GetEntity()\PPMBonesModifier()
+			@bonesController = bones
+			if @bonesSequence
 				if type(@bonesSequence) == 'table'
-					for seq in *@bonesSequence
+					for _, seq in ipairs @bonesSequence
 						bones\StartSequence(seq, @time)\SetInfinite(@GetInfinite())
 						table.insert(@knownBonesSequences, seq)
 				else
@@ -72,13 +75,12 @@ class ExpressionSequence extends PPM2.SequenceBase
 				@bonesModifierID = bones\GetModifierID(@name .. '_emote')
 
 	PlayBonesSequence: (name, time = @time) =>
-		return if not @bonesController
+		return PPM2.Message('Bones controller not found for sequence ', @, '! This is a bug. ', @controller) if not @bonesController
 		table.insert(@knownBonesSequences, name)
 		return @bonesController\StartSequence(name, time)
 
 	Think: (delta = 0) =>
-		@ent = @controller.ent
-		return false if not IsValid(@ent)
+		return false if not IsValid(@GetEntity())
 		super(delta)
 
 	Stop: =>
@@ -87,13 +89,13 @@ class ExpressionSequence extends PPM2.SequenceBase
 		if @flexController
 			if @flexSequence
 				if type(@flexSequence) == 'table'
-					for id in *@flexSequence
+					for _, id in ipairs @flexSequence
 						@flexController\EndSequence(id)
 				else
 					@flexController\EndSequence(@flexSequence)
-			flex\ResetModifiers(id) for {flex, id} in *@flexStates
+			flex\ResetModifiers(id) for _, {flex, id} in ipairs @flexStates
 		if @bonesController
-			for id in *@knownBonesSequences
+			for _, id in ipairs @knownBonesSequences
 				@bonesController\EndSequence(id)
 
 	SetBonePosition: (id = 1, val = Vector(0, 0, 0)) => @controller[@bonesFuncsPos[id]] and @controller[@bonesFuncsPos[id]](@controller, @bonesModifierID, val)
@@ -422,25 +424,25 @@ class PPM2.PonyExpressionsController extends PPM2.ControllerChildren
 		@Hook('PPM2_EmoteAnimation', @PPM2_EmoteAnimation)
 		@Hook('OnPlayerChat', @OnPlayerChat)
 		@ResetSequences()
-		PPM2.DebugPrint('Created new PonyExpressionsController for ', @ent, ' as part of ', controller, '; internal ID is ', @objID)
+		PPM2.DebugPrint('Created new PonyExpressionsController for ', @GetEntity(), ' as part of ', controller, '; internal ID is ', @objID)
 
 	PPM2_HurtAnimation: (ply = NULL) =>
-		return if ply\GetEntity() ~= @ent\GetEntity()
+		return if ply ~= @GetEntity()
 		@RestartSequence('hurt')
 		@EndSequence('kill_grin')
 
 	PPM2_KillAnimation: (ply = NULL) =>
-		return if ply\GetEntity() ~= @ent\GetEntity()
+		return if ply ~= @GetEntity()
 		@RestartSequence('kill_grin')
 		@EndSequence('anger')
 
 	PPM2_AngerAnimation: (ply = NULL) =>
-		return if ply\GetEntity() ~= @ent\GetEntity()
+		return if ply ~= @GetEntity()
 		@EndSequence('kill_grin')
 		@RestartSequence('anger')
 
 	OnPlayerChat: (ply = NULL, text = '', teamOnly = false, isDead = false) =>
-		return if ply\GetEntity() ~= @ent\GetEntity() or teamOnly or isDead
+		return if ply ~= @GetEntity() or teamOnly or isDead
 		text = text\lower()
 		switch text
 			when 'o', ':o', 'о', 'О', ':о', ':О'
@@ -474,8 +476,8 @@ class PPM2.PonyExpressionsController extends PPM2.ControllerChildren
 					@RestartSequence('talk')
 
 	PPM2_EmoteAnimation: (ply = NULL, emote = '', time, isEndless = false, shouldStop = false) =>
-		return if ply\GetEntity() ~= @ent\GetEntity()
-		for {:sequence} in *PPM2.AVALIABLE_EMOTES
+		return if ply ~= @GetEntity()
+		for _, {:sequence} in ipairs PPM2.AVALIABLE_EMOTES
 			if shouldStop or sequence ~= emote
 				@EndSequence(sequence)
 
@@ -483,6 +485,7 @@ class PPM2.PonyExpressionsController extends PPM2.ControllerChildren
 			seqPlay = @RestartSequence(emote, time)
 			if not seqPlay
 				PPM2.Message("Unknown Emote - #{emote}!")
+				print(seqPlay, @isValid)
 				print(debug.traceback())
 				return
 			seqPlay\SetInfinite(isEndless)

@@ -1,61 +1,66 @@
 
 --
--- Copyright (C) 2017-2018 DBot
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 --
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
---
--- 0	eyes_updown
--- 1	eyes_rightleft
--- 2	JawOpen
--- 3	JawClose
--- 4	Smirk
--- 5	Frown
--- 6	Stretch
--- 7	Pucker
--- 8	Grin
--- 9	CatFace
--- 10	Mouth_O
--- 11	Mouth_O2
--- 12	Mouth_Full
--- 13	Tongue_Out
--- 14	Tongue_Up
--- 15	Tongue_Down
--- 16	NoEyelashes
--- 17	Eyes_Blink
--- 18	Left_Blink
--- 19	Right_Blink
--- 20	Scrunch
--- 21	FatButt
--- 22	Stomach_Out
--- 23	Stomach_In
--- 24	Throat_Bulge
--- 25	Male
--- 26	Hoof_Fluffers
--- 27	o3o
--- 28	Ear_Fluffers
--- 29	Fangs
--- 30	Claw_Teeth
--- 31	Fang_Test
--- 32	angry_eyes
--- 33	sad_eyes
--- 34	Eyes_Blink_Lower
--- 35	Male_2
--- 36	Buff_Body
--- 37	Manliest_Chin
--- 38	Lowerlid_Raise
--- 39	Happy_Eyes
--- 40	Duck
+-- 0    eyes_updown
+-- 1    eyes_rightleft
+-- 2    JawOpen
+-- 3    JawClose
+-- 4    Smirk
+-- 5    Frown
+-- 6    Stretch
+-- 7    Pucker
+-- 8    Grin
+-- 9    CatFace
+-- 10   Mouth_O
+-- 11   Mouth_O2
+-- 12   Mouth_Full
+-- 13   Tongue_Out
+-- 14   Tongue_Up
+-- 15   Tongue_Down
+-- 16   NoEyelashes
+-- 17   Eyes_Blink
+-- 18   Left_Blink
+-- 19   Right_Blink
+-- 20   Scrunch
+-- 21   FatButt
+-- 22   Stomach_Out
+-- 23   Stomach_In
+-- 24   Throat_Bulge
+-- 25   Male
+-- 26   Hoof_Fluffers
+-- 27   o3o
+-- 28   Ear_Fluffers
+-- 29   Fangs
+-- 30   Claw_Teeth
+-- 31   Fang_Test
+-- 32   angry_eyes
+-- 33   sad_eyes
+-- 34   Eyes_Blink_Lower
+-- 35   Male_2
+-- 36   Buff_Body
+-- 37   Manliest_Chin
+-- 38   Lowerlid_Raise
+-- 39   Happy_Eyes
+-- 40   Duck
 
 DISABLE_FLEXES = CreateConVar('ppm2_disable_flexes', '0', {FCVAR_ARCHIVE}, 'Disable pony flexes controllers. Saves some FPS.')
 
@@ -68,7 +73,6 @@ class FlexState extends PPM2.ModifierBase
 	new: (controller, flexName = '', flexID = 0, scale = 1, speed = 1, active = true, min = 0, max = 1, useModifiers = true) =>
 		super()
 		@controller = controller
-		@ent = controller.ent
 		@name = flexName
 		@flexName = flexName
 		@flexID = flexID
@@ -101,7 +105,7 @@ class FlexState extends PPM2.ModifierBase
 	GetLerpModify: => @lerpMultiplier
 	LerpModify: => @lerpMultiplier
 
-	GetEntity: => @ent
+	GetEntity: => @controller\GetEntity()
 	GetData: => @controller
 	GetController: => @controller
 	GetValue: => @current
@@ -128,7 +132,7 @@ class FlexState extends PPM2.ModifierBase
 
 	AddValue: (val = 0) => @SetValue(@current + val)
 	AddRealValue: (val = 0) => @SetRealValue(@target + val)
-	Think: (ent = @ent, delta = 0) =>
+	Think: (ent = @GetEntity(), delta = 0) =>
 		return if not @active
 
 		if @useModifiers
@@ -140,13 +144,9 @@ class FlexState extends PPM2.ModifierBase
 				@modifiers[i] = Lerp(delta * 15 * @speed * @speedModify * @lerpMultiplier, @modifiers[i] or 0, @WeightModifiers[i])
 				@current += @modifiers[i]
 
-			@scale += modif for modif in *@ScaleModifiers
-			@speed += modif for modif in *@SpeedModifiers
+			@scale += modif for _, modif in ipairs @ScaleModifiers
+			@speed += modif for _, modif in ipairs @SpeedModifiers
 			@current = math.Clamp(@current, @min, @max) * @scale
-
-		if not IsValid(@ent)
-			@ent = @controller.ent
-			ent = @ent
 
 		ent\SetFlexWeight(@flexID, @current)
 	DataChanges: (state) =>
@@ -164,7 +164,7 @@ class FlexState extends PPM2.ModifierBase
 		@speed = @originalspeed * @speedModify
 		@target = 0
 		@current = 0
-		@ent\SetFlexWeight(@flexID, 0) if IsValid(@ent)
+		@GetEntity()\SetFlexWeight(@flexID, 0) if IsValid(@GetEntity())
 
 PPM2.FlexState = FlexState
 
@@ -180,7 +180,7 @@ class FlexSequence extends PPM2.SequenceBase
 		@flexIDS = {}
 		@flexStates = {}
 		i = 1
-		for id in *data.ids
+		for _, id in ipairs data.ids
 			state = controller\GetFlexState(id)
 			num = state\GetModifierID(@name)
 			@["flex_#{id}"] = num
@@ -190,25 +190,21 @@ class FlexSequence extends PPM2.SequenceBase
 			@flexIDS[i] = num
 			i += 1
 
-		@ent = controller.ent
 		@controller = controller
 		@Launch()
 
 	GetController: => @controller
-	GetEntity: => @ent
 	GetModifierID: (id = '') => @flexIDS[id]
 	GetFlexState: (id = '') => @flexStates[id]
 
 	Think: (delta = 0) =>
-		@ent = @controller.ent
-		return false if not IsValid(@ent)
+		return false if not IsValid(@GetEntity())
 		super(delta)
 
 	Stop: =>
 		super()
-		if @parent
-			for id in *@flexIDsIterable
-				@parent\GetFlexState(id)\ResetModifiers(@name)
+		return unless @parent
+		@parent\GetFlexState(id)\ResetModifiers(@name) for _, id in ipairs @flexIDsIterable
 
 	SetModifierWeight: (id = '', val = 0) => @GetFlexState(id)\SetModifierWeight(@GetModifierID(id), val)
 	SetModifierSpeed: (id = '', val = 0) => @GetFlexState(id)\SetModifierSpeed(@GetModifierID(id), val)
@@ -274,8 +270,8 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'reset': =>
 				@SetTime(math.random(15, 45) / 10)
 				@lastStrengthUpdate = @lastStrengthUpdate or 0
-				if @lastStrengthUpdate < RealTimeL()
-					@lastStrengthUpdate = RealTimeL() + 2
+				if @lastStrengthUpdate < CurTimeL()
+					@lastStrengthUpdate = CurTimeL() + 2
 					@frownStrength = math.random(40, 100) / 100
 					@grinStrength = math.random(15, 40) / 100
 					@angryStrength = math.random(30, 80) / 100
@@ -295,8 +291,8 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'reset': =>
 				@SetTime(math.random(15, 45) / 10)
 				@lastStrengthUpdate = @lastStrengthUpdate or 0
-				if @lastStrengthUpdate < RealTimeL()
-					@lastStrengthUpdate = RealTimeL() + 2
+				if @lastStrengthUpdate < CurTimeL()
+					@lastStrengthUpdate = CurTimeL() + 2
 					@frownStrength = math.random(40, 100) / 100
 					@grinStrength = math.random(15, 40) / 100
 					@angryStrength = math.random(30, 80) / 100
@@ -341,7 +337,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'reset': =>
 				@SetModifierWeight(1, 0.9)
 			'func': (delta, timeOfAnim) =>
-				@SetModifierWeight(2, 0.75 + math.sin(RealTimeL() * 7) * 0.25)
+				@SetModifierWeight(2, 0.75 + math.sin(CurTimeL() * 7) * 0.25)
 		}
 
 		{
@@ -351,7 +347,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Tongue_Out'}
 			'func': (delta, timeOfAnim) =>
-				@SetModifierWeight(1, 0.15 + math.sin(RealTimeL() * 10) * 0.1)
+				@SetModifierWeight(1, 0.15 + math.sin(CurTimeL() * 10) * 0.1)
 		}
 
 		{
@@ -361,7 +357,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Tongue_Out'}
 			'func': (delta, timeOfAnim) =>
-				@SetModifierWeight(1, 0.5 + math.sin(RealTimeL() * 4) * 0.5)
+				@SetModifierWeight(1, 0.5 + math.sin(CurTimeL() * 4) * 0.5)
 		}
 
 		{
@@ -371,7 +367,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Tongue_Out'}
 			'func': (delta, timeOfAnim) =>
-				@SetModifierWeight(1, 0.5 + math.sin(RealTimeL() * 8) * 0.5)
+				@SetModifierWeight(1, 0.5 + math.sin(CurTimeL() * 8) * 0.5)
 		}
 
 		{
@@ -396,7 +392,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 				@SetModifierWeight(1, math.Rand(0.28, 0.34))
 				@SetModifierWeight(3, math.Rand(0.45, 0.50))
 			'func': (delta, timeOfAnim) =>
-				@SetModifierWeight(2, 0.2 + math.sin(RealTimeL() * 16) * 0.07)
+				@SetModifierWeight(2, 0.2 + math.sin(CurTimeL() * 16) * 0.07)
 		}
 
 		{
@@ -417,8 +413,8 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Left_Blink', 'Right_Blink'}
 			'func': (delta, timeOfAnim) =>
-				return false if @ent\GetNWBool('PPM2.IsDeathRagdoll')
-				value = math.abs(math.sin(RealTimeL() * .5) * .15)
+				return false if @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll')
+				value = math.abs(math.sin(CurTimeL() * .5) * .15)
 				@SetModifierWeight(1, value)
 				@SetModifierWeight(2, value)
 		}
@@ -430,7 +426,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Left_Blink', 'Right_Blink', 'Frown'}
 			'func': (delta, timeOfAnim) =>
-				return if not @ent\GetNWBool('PPM2.IsDeathRagdoll')
+				return if not @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll')
 				@SetModifierWeight(1, 1)
 				@SetModifierWeight(2, 1)
 				@SetModifierWeight(3, 0.5)
@@ -443,7 +439,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 2
 			'ids': {'Stomach_Out', 'Stomach_In'}
 			'func': (delta, timeOfAnim) =>
-				return false if @ent\GetNWBool('PPM2.IsDeathRagdoll')
+				return false if @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll')
 				In, Out = @GetModifierID(1), @GetModifierID(2)
 				InState, OutState = @GetFlexState(1), @GetFlexState(2)
 				abs = math.abs(0.5 - timeOfAnim)
@@ -458,7 +454,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Frown', 'Left_Blink', 'Right_Blink', 'Scrunch', 'Mouth_O', 'JawOpen', 'Grin'}
 			'func': (delta, timeOfAnim) =>
-				return false if not @ent\IsPlayer() and not @ent\IsNPC() and @ent.Type ~= 'nextbot'
+				return false if not @GetEntity()\IsPlayer() and not @GetEntity()\IsNPC() and @GetEntity().Type ~= 'nextbot'
 				frown = @GetModifierID(1)
 				frownState = @GetFlexState(1)
 				left, right = @GetModifierID(2), @GetModifierID(3)
@@ -467,7 +463,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 				Scrunch = @GetModifierID(4)
 				ScrunchState = @GetFlexState(4)
 
-				hp, mhp = @ent\Health(), @ent\GetMaxHealth()
+				hp, mhp = @GetEntity()\Health(), @GetEntity()\GetMaxHealth()
 				mhp = 1 if mhp == 0
 				div = hp / mhp
 				strength = math.Clamp(1.5 - div * 1.5, 0, 1)
@@ -481,7 +477,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 				JawOpenState = @GetFlexState(6)
 
 				if strength > .75
-					JawOpenState\SetModifierWeight(JawOpen, strength * .2 + math.sin(RealTimeL() * strength * 3) * .1)
+					JawOpenState\SetModifierWeight(JawOpen, strength * .2 + math.sin(CurTimeL() * strength * 3) * .1)
 				else
 					JawOpenState\SetModifierWeight(JawOpen, 0)
 
@@ -500,7 +496,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'func': (delta, timeOfAnim) =>
 				Grin = @GetModifierID(1)
 				GrinState = @GetFlexState(1)
-				strength = .5 + math.sin(RealTimeL() * 2) * .25
+				strength = .5 + math.sin(CurTimeL() * 2) * .25
 				GrinState\SetModifierWeight(Grin, strength)
 		}
 
@@ -602,7 +598,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 				@SetModifierWeight(5, math.random(10, 15) / 100)
 				@SetModifierWeight(6, math.random(80, 100) / 100)
 			'func': (delta, timeOfAnim) =>
-				val = math.sin(RealTimeL() * 8) * .6
+				val = math.sin(CurTimeL() * 8) * .6
 				if val > 0
 					@SetModifierWeight(7, val)
 					@SetModifierWeight(8, 0)
@@ -719,7 +715,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 				data = @talkAnim[cPos]
 				return if not data
 				{jaw, out, up, down} = data
-				volume = @ent\VoiceVolume() * 6
+				volume = @GetEntity()\VoiceVolume() * 6
 				jaw *= volume
 				out *= volume
 				up *= volume
@@ -930,8 +926,8 @@ class PonyFlexController extends PPM2.ControllerChildren
 		for i, flex in pairs @FLEX_LIST
 			flex.id = i - 1
 			flex.targetName = "target#{flex.flex}"
-		@FLEX_IDS = {flex.id, flex for flex in *@FLEX_LIST}
-		@FLEX_TABLE = {flex.flex, flex for flex in *@FLEX_LIST}
+		@FLEX_IDS = {flex.id, flex for _, flex in ipairs @FLEX_LIST}
+		@FLEX_TABLE = {flex.flex, flex for _, flex in ipairs @FLEX_LIST}
 
 	@SetupFlexesTables()
 
@@ -940,57 +936,58 @@ class PonyFlexController extends PPM2.ControllerChildren
 
 	new: (data) =>
 		super(data)
-		@states = [FlexState(@, flex, id, scale, speed, active) for {:flex, :id, :scale, :speed, :active} in *@@FLEX_LIST]
-		@statesTable = {state\GetFlexName(), state for state in *@states}
-		@statesTable[state\GetFlexName()\lower()] = state for state in *@states
-		@statesTable[state\GetFlexID()] = state for state in *@states
+		@states = [FlexState(@, flex, id, scale, speed, active) for _, {:flex, :id, :scale, :speed, :active} in ipairs @@FLEX_LIST]
+		@statesTable = {state\GetFlexName(), state for _, state in ipairs @states}
+		@statesTable[state\GetFlexName()\lower()] = state for _, state in ipairs @states
+		@statesTable[state\GetFlexID()] = state for _, state in ipairs @states
 		@RebuildIterableList()
 		ponyData = data\GetData()
-		flex\SetUseLerp(ponyData\GetUseFlexLerp()) for flex in *@states
-		flex\SetLerpModify(ponyData\GetFlexLerpMultiplier()) for flex in *@states
+		flex\SetUseLerp(ponyData\GetUseFlexLerp()) for _, flex in ipairs @states
+		flex\SetLerpModify(ponyData\GetFlexLerpMultiplier()) for _, flex in ipairs @states
 		@Hook('PlayerStartVoice', @PlayerStartVoice)
 		@Hook('PlayerEndVoice', @PlayerEndVoice)
 		@ResetSequences()
-		PPM2.DebugPrint('Created new flex controller for ', @ent, ' as part of ', data, '; internal ID is ', @fid)
+		PPM2.DebugPrint('Created new flex controller for ', @GetEntity(), ' as part of ', data, '; internal ID is ', @fid)
 
 	IsValid: => @isValid
 
 	GetFlexState: (name = '') => @statesTable[name]
 	RebuildIterableList: =>
 		return false if not @isValid
-		@statesIterable = [state for state in *@states when state\GetIsActive()]
+		@statesIterable = [state for _, state in ipairs @states when state\GetIsActive()]
 	DataChanges: (state) =>
 		return if not @isValid
-		flexState\DataChanges(state) for flexState in *@states
+		flexState\DataChanges(state) for _, flexState in ipairs @states
 		if state\GetKey() == 'UseFlexLerp'
-			flex\SetUseLerp(state\GetValue()) for flex in *@states
+			flex\SetUseLerp(state\GetValue()) for _, flex in ipairs @states
 		if state\GetKey() == 'FlexLerpMultiplier'
-			flex\SetLerpModify(state\GetValue()) for flex in *@states
-	GetEntity: => @ent
+			flex\SetLerpModify(state\GetValue()) for _, flex in ipairs @states
+
+	GetEntity: => @controller\GetEntity()
 	GetData: => @controller
 	GetController: => @controller
 
 	PlayerStartVoice: (ply = NULL) =>
-		return if ply\GetEntity() ~= @ent\GetEntity()
+		return if ply ~= @GetEntity()
 		@StartSequence('talk_endless')
 	PlayerEndVoice: (ply = NULL) =>
-		return if ply\GetEntity() ~= @ent\GetEntity()
+		return if ply ~= @GetEntity()
 		@EndSequence('talk_endless')
 
 	ResetSequences: =>
 		super()
-		state\Reset(false) for state in *@statesIterable
+		state\Reset(false) for _, state in ipairs @statesIterable
 
-	Think: (ent = @ent) =>
+	Think: (ent = @GetEntity()) =>
 		return if DISABLE_FLEXES\GetBool()
 		delta = super(ent)
 		return if not delta
-		state\Think(ent, delta) for state in *@statesIterable
+		state\Think(ent, delta) for _, state in ipairs @statesIterable
 		return delta
 
 do
 	ppm2_disable_flexes = (cvar, oldval, newval) ->
-		for ply in *player.GetAll()
+		for _, ply in ipairs player.GetAll()
 			data = ply\GetPonyData()
 			continue if not data
 			renderer = data\GetRenderController()

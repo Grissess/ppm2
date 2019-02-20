@@ -1,17 +1,23 @@
 
--- Copyright (C) 2017-2018 DBot
+-- Copyright (C) 2017-2019 DBot
 
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
 
---     http://www.apache.org/licenses/LICENSE-2.0
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
 
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 -- editor stuffs
 
@@ -24,7 +30,7 @@ gui.ppm2.editor.eyes.lightwarp = "Lightwarp"
 gui.ppm2.editor.eyes.desc1 = "Lightwarp textur URL eingabe\nEs muss 256x16 sein!"
 gui.ppm2.editor.eyes.desc2 = "Glanzstärke\nDieser Parameter erhöht die Stärke der Echtzeitreflexionen auf das Auge\nUm Änderungen zu sehen, setze ppm2_cl_reflections convar auf 1\nAndere Spieler würden Reflexionen nur sehen, wenn ppm2_cl_reflections auf 1 gesetzt ist\n0 - ist matt; 1 - ist spiegelnd"
 
-for {tprefix, prefix} in *{{'def', ''}, {'left', 'Links '}, {'right', 'Rechts '}}
+for _, {tprefix, prefix} in ipairs {{'def', ''}, {'left', 'Links '}, {'right', 'Rechts '}}
 	gui.ppm2.editor.eyes[tprefix].lightwarp.shader = "#{prefix}EyeRefract Shader verwenden"
 	gui.ppm2.editor.eyes[tprefix].lightwarp.cornera = "#{prefix}Eye Cornea diffus verwenden"
 	gui.ppm2.editor.eyes[tprefix].lightwarp.glossiness = "#{prefix}Glanz"
@@ -340,8 +346,7 @@ Um höher/niedriger zu skalieren, verwende die Hoch/Runter Pfeiltasten
 Um breiter/kleiner zu skalieren, verwende die Rechts/Links Pfeiltasten
 Um links/rechts zu Drehen, verwende die Q/E Tasten"
 
-for name, data in pairs PPM2.PonyDataRegistry
-	gui.ppm2.editor.reset[data.getFunc\lower()] = 'Zurücksetzen ' .. data.getFunc
+gui.ppm2.editor.reset_value = 'Zurücksetzen %s'
 
 gui.ppm2.editor.phong.info = 'Mehr Infos über Phong im Wiki'
 gui.ppm2.editor.phong.exponent = 'Phong Exponent - wie stark die reflektierende Eigenschaft\nvon der Ponyhaut ist\nSetze den Wert nahe Null, um dem Roboterlook zu bekommen\nPonyhaut'

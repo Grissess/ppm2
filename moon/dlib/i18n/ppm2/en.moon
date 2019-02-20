@@ -1,19 +1,28 @@
 
--- Copyright (C) 2017-2018 DBot
+-- Copyright (C) 2017-2019 DBot
 
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
 
---     http://www.apache.org/licenses/LICENSE-2.0
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
 
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 -- editor stuffs
+
+gui.ppm2.dxlevel.not_supported = 'Your DirectX™ level is too low. At least 9.0 is required. If you use 8.1 for framerate,\nyou either have the most ancient videocard or have bad drivers.\nBecause framerate in gmod can only be low because of other addons which create pointless high CPU load.\nYes, this message will appear several times to annoy you. Because WHY THE FK YOU THEN REPORT ABOUT MISSING TEXTURES???'
+gui.ppm2.dxlevel.toolow = 'DirectX™ level is too low for PPM/2'
 
 gui.ppm2.editor.eyes.separate = 'Use separated settings for eyes'
 gui.ppm2.editor.eyes.url = 'Eye URL texture'
@@ -24,7 +33,7 @@ gui.ppm2.editor.eyes.lightwarp = "Lightwarp"
 gui.ppm2.editor.eyes.desc1 = "Lightwarp texture URL input\nIt must be 256x16!"
 gui.ppm2.editor.eyes.desc2 = "Glossiness strength\nThis parameters adjucts strength of real time reflections on eye\nTo see changes, set ppm2_cl_reflections convar to 1\nOther players would see reflections only with ppm2_cl_reflections set to 1\n0 - is matted; 1 - is mirror"
 
-for {tprefix, prefix} in *{{'def', ''}, {'left', 'Left '}, {'right', 'Right '}}
+for _, {tprefix, prefix} in ipairs {{'def', ''}, {'left', 'Left '}, {'right', 'Right '}}
 	gui.ppm2.editor.eyes[tprefix].lightwarp.shader = "#{prefix}Use EyeRefract shader"
 	gui.ppm2.editor.eyes[tprefix].lightwarp.cornera = "#{prefix}Use Eye Cornera diffuse"
 	gui.ppm2.editor.eyes[tprefix].lightwarp.glossiness = "#{prefix}Glossiness"
@@ -211,6 +220,9 @@ for i = 1, 6
 	gui.ppm2.editor.url_mane['desc' .. i] = "Mane URL Detail #{i} input field"
 	gui.ppm2.editor.url_mane['color' .. i] = "Mane URL detail color #{i}"
 
+	gui.ppm2.editor.url_tail['desc' .. i] = "Tail URL Detail #{i} input field"
+	gui.ppm2.editor.url_tail['color' .. i] = "Tail URL detail color #{i}"
+
 	gui.ppm2.editor.url_mane.sep.up['desc' .. i] = "Upper mane URL Detail #{i} input field"
 	gui.ppm2.editor.url_mane.sep.up['color' .. i] = "Upper Mane URL detail color #{i}"
 
@@ -340,8 +352,7 @@ To Scale higher/lower use Up/Down arrows
 To Scale wider/smaller use Right/Left arrows
 To rotate left/right use Q/E"
 
-for name, data in pairs PPM2.PonyDataRegistry
-	gui.ppm2.editor.reset[data.getFunc\lower()] = 'Reset ' .. data.getFunc
+gui.ppm2.editor.reset_value = 'Reset %s'
 
 gui.ppm2.editor.phong.info = 'More info about Phong on wiki'
 gui.ppm2.editor.phong.exponent = 'Phong Exponent - how strong reflective property\nof pony skin is\nSet near zero to get robotic looking of your\npony skin'
@@ -420,3 +431,26 @@ gui.ppm2.editor.intro.text = "Welcome to my new... Robosurgeon for Ponies! It al
 	"No refunds."
 gui.ppm2.editor.intro.title = 'Welcome here, Human!'
 gui.ppm2.editor.intro.okay = "Ok, i will never read this license anyway"
+
+message.ppm2.debug.race_condition = 'Received NetworkedPonyData before entity were created on client! Waiting...'
+
+gui.ppm2.spawnmenu.newmodel = 'Spawn new model'
+gui.ppm2.spawnmenu.newmodelnj = 'Spawn new nj model'
+gui.ppm2.spawnmenu.oldmodel = 'Spawn old model'
+gui.ppm2.spawnmenu.oldmodelnj = 'Spawn old nj model'
+gui.ppm2.spawnmenu.cppmmodel = 'Spawn CPPM model'
+gui.ppm2.spawnmenu.cppmmodelnj = 'Spawn CPPM nj model'
+gui.ppm2.spawnmenu.cleanup = 'Cleanup unused models'
+gui.ppm2.spawnmenu.reload = 'Reload local data'
+gui.ppm2.spawnmenu.require = 'Require data from server'
+gui.ppm2.spawnmenu.drawhooves = 'Draw hooves as hands'
+gui.ppm2.spawnmenu.nohoofsounds = 'No hoofsounds'
+gui.ppm2.spawnmenu.noflexes = 'Disable flexes (emotes)'
+gui.ppm2.spawnmenu.advancedmode = 'Enable PPM2 editor advanced mode'
+gui.ppm2.spawnmenu.reflections = 'Enable real time eyes reflections'
+gui.ppm2.spawnmenu.reflections_drawdist = 'Reflections draw distance'
+gui.ppm2.spawnmenu.reflections_renderdist = 'Reflections render distance'
+gui.ppm2.spawnmenu.doublejump = 'Double jump activate flight'
+
+tip.ppm2.in_editor = 'In PPM/2 Editor'
+tip.ppm2.camera = "%s's PPM/2 Camera"

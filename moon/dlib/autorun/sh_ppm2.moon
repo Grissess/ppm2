@@ -1,71 +1,76 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 export PPM2
 PPM2 = PPM2 or {}
 
-DLib.manifest({
-	name: 'PPM/2'
-	prefix: 'ppm2'
+shared = (filein) ->
+	AddCSLuaFile('ppm2/' .. filein) if SERVER
+	include('ppm2/' .. filein)
 
-	shared: {
-		'common/modifier_base.lua'
-		'common/sequence_base.lua'
-		'common/sequence_holder.lua'
-		'common/controller_children.lua'
-		'common/registry.lua'
-		'common/functions.lua'
-		'common/bodygroup_controller.lua'
-		'common/weight_controller.lua'
-		'common/pony_expressions_controller.lua'
-		'common/emotes.lua'
-		'common/flex_controller.lua'
-		'common/registry_data.lua'
-		'common/ponydata.lua'
-		'common/ponyfly.lua'
-		'common/magic_controller.lua'
-		'common/size_controller.lua'
-		'common/hooks.lua'
-		'common/compat.lua'
-	}
+server = (filein) -> include('ppm2/' .. filein) if SERVER
+client = (filein) ->
+	AddCSLuaFile('ppm2/' .. filein) if SERVER
+	include('ppm2/' .. filein) if CLIENT
 
-	client: {
-		'client/bones_modifier.lua'
-		'client/data_instance.lua'
-		'client/materials_registry.lua'
-		'client/texture_controller.lua'
-		'client/new_texture_controller.lua'
-		'client/hooks.lua'
-		'client/functions.lua'
-		'client/render_controller.lua'
-		'client/emotes.lua'
-		'client/player_menu.lua'
-		'client/editor.lua'
-		'client/editor3.lua'
-		'client/rag_edit.lua'
-		'client/render.lua'
-		'client/sound.lua'
-	}
+shared('common/modifier_base.lua')
+shared('common/sequence_base.lua')
+shared('common/sequence_holder.lua')
+shared('common/controller_children.lua')
+shared('common/registry.lua')
+shared('common/functions.lua')
+shared('common/bodygroup_controller.lua')
+shared('common/weight_controller.lua')
+shared('common/pony_expressions_controller.lua')
+shared('common/emotes.lua')
+shared('common/flex_controller.lua')
+shared('common/registry_data.lua')
+shared('common/ponydata.lua')
+shared('common/bones_modifier.lua')
+shared('common/ponyfly.lua')
+shared('common/size_controller.lua')
+shared('common/magic_controller.lua')
+shared('common/hooks.lua')
+shared('common/hoofsteps.lua')
 
-	server: {
-		'server/misc.lua'
-		'server/hooks.lua'
-		'server/emotes.lua'
-		'server/hitgroups.lua'
-		'server/rag_edit.lua'
-	}
-})
+client('client/data_instance.lua')
+client('client/materials_registry.lua')
+client('client/texture_controller.lua')
+client('client/new_texture_controller.lua')
+client('client/hooks.lua')
+client('client/functions.lua')
+client('client/render_controller.lua')
+client('client/emotes.lua')
+client('client/player_menu.lua')
+client('client/editor.lua')
+client('client/editor3.lua')
+client('client/rag_edit.lua')
+client('client/render.lua')
+client('client/sound.lua')
+
+server('server/misc.lua')
+server('server/hooks.lua')
+server('server/emotes.lua')
+server('server/hitgroups.lua')
+server('server/rag_edit.lua')
+
+return nil

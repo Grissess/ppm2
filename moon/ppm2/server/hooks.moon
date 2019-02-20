@@ -1,19 +1,24 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 hook.Add 'PlayerSpawn', 'PPM2.Hooks', =>
 	if IsValid(@__ppm2_ragdoll)
@@ -52,15 +57,14 @@ do
 	timer.Create 'PPM2.Require', 0.25, 0, -> xpcall(safeSendFunction, errorTrack)
 	net.Receive 'PPM2.Require', (len = 0, ply = NULL) ->
 		return if not IsValid(ply)
-		REQUIRE_CLIENTS[ply] = for ent in *ents.GetAll()
-			continue if ent == ply
-			data = ent\GetPonyData()
-			continue if not data
-			ent
+		REQUIRE_CLIENTS[ply] = {}
+		target = REQUIRE_CLIENTS[ply]
 
-net.Receive 'PPM2.EditorStatus', (len = 0, ply = NULL) ->
-	return if not IsValid(ply)
-	ply\SetNWBool('PPM2.InEditor', net.ReadBool())
+		for _, ent in ipairs ents.GetAll()
+			if ent ~= ply
+				data = ent\GetPonyData()
+				if data
+					table.insert(target, ent)
 
 ENABLE_NEW_RAGDOLLS = CreateConVar('ppm2_sv_new_ragdolls', '1', {FCVAR_NOTIFY, FCVAR_REPLICATED}, 'Enable new ragdolls')
 RAGDOLL_COLLISIONS = CreateConVar('ppm2_sv_ragdolls_collisions', '1', {FCVAR_NOTIFY, FCVAR_REPLICATED}, 'Enable ragdolls collisions')
@@ -96,7 +100,7 @@ createPlayerRagdoll = =>
 			physobj\SetPos(pos, true) if pos
 			physobj\SetAngles(ang) if ang
 		copy = @GetPonyData()\Clone(@__ppm2_ragdoll)
-		timer.Simple 0.5, -> copy\Create() if IsValid(@__ppm2_ragdoll)
+		copy\Create()
 
 ALLOW_RAGDOLL_DAMAGE = CreateConVar('ppm2_sv_ragdoll_damage', '1', {FCVAR_ARCHIVE, FCVAR_NOTIFY}, 'Should death ragdoll cause damage?')
 
@@ -162,4 +166,4 @@ PlayerSpawnBot = =>
 			data\Create()
 
 hook.Add 'PlayerSpawn', 'PPM2.Bots', PlayerSpawnBot
-timer.Simple 0, -> PlayerSpawnBot(ply) for ply in *player.GetAll()
+timer.Simple 0, -> PlayerSpawnBot(ply) for _, ply in ipairs player.GetAll()

@@ -1,19 +1,27 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
+
+ENABLE_EMOTES_IN_CHAT = CreateConVar('ppm2_cl_emotes_chat', '1', {FCVAR_ARCHIVE}, 'Show emotes list while chatbox is open')
+ENABLE_EMOTES_IN_CONTEXT = CreateConVar('ppm2_cl_emotes_context', '1', {FCVAR_ARCHIVE}, 'Show emotes list while context menu is open')
 
 net.Receive 'PPM2.DamageAnimation', ->
 	ent = net.ReadEntity()
@@ -70,12 +78,12 @@ CONSOLE_EMOTES_COMMAND = (ply = LocalPlayer(), cmd = '', args = {}) ->
 		net.SendToServer()
 		hook.Call('PPM2_EmoteAnimation', nil, LocalPlayer(), emoteID, PPM2.AVALIABLE_EMOTES_BY_SEQUENCE[emoteID].time)
 
-CONSOLE_DEF_LIST = ['ppm2_emote "' .. sequence .. '"' for {:sequence} in *PPM2.AVALIABLE_EMOTES]
+CONSOLE_DEF_LIST = ['ppm2_emote "' .. sequence .. '"' for _, {:sequence} in ipairs PPM2.AVALIABLE_EMOTES]
 CONSOLE_EMOTES_AUTOCOMPLETE = (cmd = '', args = '') ->
 	args = args\Trim()
 	return CONSOLE_DEF_LIST if args == ''
 	output = {}
-	for {:sequence} in *PPM2.AVALIABLE_EMOTES
+	for _, {:sequence} in ipairs PPM2.AVALIABLE_EMOTES
 		if string.find(sequence, '^' .. args)
 			table.insert(output, 'ppm2_emote "' .. sequence .. '"')
 	return output
@@ -129,7 +137,7 @@ PPM2.CreateEmotesPanel = (parent, target = LocalPlayer(), sendToServer = true) -
 		\SetSize(200, 300)
 		.Paint = ->
 		\SetMouseInputEnabled(true)
-	@buttons = for {:name, :id, :sequence, :time, :fexists, :filecrop} in *PPM2.AVALIABLE_EMOTES
+	@buttons = for _, {:name, :id, :sequence, :time, :fexists, :filecrop} in ipairs PPM2.AVALIABLE_EMOTES
 		with btn = vgui.Create('DButton', @scroll)
 			.id = id
 			.time = time
@@ -175,13 +183,14 @@ PPM2.CreateEmotesPanel = (parent, target = LocalPlayer(), sendToServer = true) -
 						.parent = image
 					.OnRemove = -> .hoverPnl\Remove() if IsValid(.hoverPnl)
 			btn
-	@scroll\AddItem(btn) for btn in *@buttons
+	@scroll\AddItem(btn) for _, btn in ipairs @buttons
 	@SetVisible(false)
 	@SetMouseInputEnabled(false)
 	return @
 
 hook.Add 'ContextMenuCreated', 'PPM2.Emotes', =>
 	return if not IsValid(@)
+	return if not ENABLE_EMOTES_IN_CONTEXT\GetBool()
 	PPM2.EmotesPanelContext\Remove() if IsValid(PPM2.EmotesPanelContext)
 	PPM2.EmotesPanelContext = PPM2.CreateEmotesPanel(@)
 	PPM2.EmotesPanelContext\SetPos(ScrW() / 2 - 100, ScrH() - 300)
@@ -197,7 +206,7 @@ hook.Add 'ContextMenuCreated', 'PPM2.Emotes', =>
 		PPM2.EmotesPanelContext\SetMouseInputEnabled(status)
 
 hook.Add 'StartChat', 'PPM2.Emotes', ->
-	if not IsValid(PPM2.EmotesPanel)
+	if not IsValid(PPM2.EmotesPanel) and ENABLE_EMOTES_IN_CHAT\GetBool()
 		PPM2.EmotesPanel = PPM2.CreateEmotesPanel()
 		PPM2.EmotesPanel\SetPos(ScrW() - 500, ScrH() - 300)
 

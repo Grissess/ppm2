@@ -1,19 +1,24 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 PPM2.USE_HIGHRES_BODY = CreateConVar('ppm2_cl_hires_body', '0', {FCVAR_ARCHIVE}, 'Use high resoluation when rendering pony bodies. AFFECTS ONLY TEXTURE COMPILATION TIME (increases lag spike on pony data load)')
 PPM2.USE_HIGHRES_TEXTURES = CreateConVar('ppm2_cl_hires_generic', '0', {FCVAR_ARCHIVE}, 'Create 1024x1024 textures instead of 512x512 on texture compiling')
@@ -22,7 +27,7 @@ RELOADABLE_MATERIALS = {}
 PPM2.RELOADABLE_MATERIALS = RELOADABLE_MATERIALS
 concommand.Add 'ppm2_reload_materials', ->
 	cTime = SysTime()
-	for mat in *RELOADABLE_MATERIALS
+	for _, mat in ipairs RELOADABLE_MATERIALS
 		if texname = mat\GetString('$basetexture')
 			mat\SetTexture('$basetexture', texname)
 		if texture = mat\GetTexture('$basetexture')
@@ -201,17 +206,17 @@ additionTable = (...) ->
 		tab[key] = val
 	return tab
 
-module.SOCKS_MATERIALS = [Material(id) for id in *module.SOCKS_PATCHS]
-module.SOCKS_DETAILS = [Material(id) for id in *module.SOCKS_DETAILS_PATCHS]
-module.CUTIEMARKS = [Material("models/ppm2/cmarks/#{mark}.png") for mark in *PPM2.DefaultCutiemarks]
-module.SUITS = [Material("models/ppm2/texclothes/#{mat}.png") for mat in *{
+module.SOCKS_MATERIALS = [Material(id) for _, id in ipairs module.SOCKS_PATCHS]
+module.SOCKS_DETAILS = [Material(id) for _, id in ipairs module.SOCKS_DETAILS_PATCHS]
+module.CUTIEMARKS = [Material("models/ppm2/cmarks/#{mark}.png") for _, mark in ipairs PPM2.DefaultCutiemarks]
+module.SUITS = [Material("models/ppm2/texclothes/#{mat}.png") for _, mat in ipairs {
 	'clothes_royalguard', 'clothes_sbs_full'
 	'clothes_sbs_light', 'clothes_wbs_full'
 	'clothes_wbs_light', 'spidermane_light'
 	'spidermane_full'
 }]
 
-module.TATTOOS = [Material("models/ppm2/partrender/tattoo/#{fil\lower()}.png") for fil in *PPM2.TATTOOS_REGISTRY when fil ~= 'NONE']
+module.TATTOOS = [Material("models/ppm2/partrender/tattoo/#{fil\lower()}.png") for _, fil in ipairs PPM2.TATTOOS_REGISTRY when fil ~= 'NONE']
 debugwhite = {
 	'$basetexture': 'models/debug/debugwhite'
 	'$ignorez': 1

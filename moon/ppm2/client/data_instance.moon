@@ -1,25 +1,30 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 file.CreateDir('ppm2')
 file.CreateDir('ppm2/backups')
 file.CreateDir('ppm2/thumbnails')
 
-for ffind in *file.Find('ppm2/*.txt', 'DATA')
+for _, ffind in ipairs file.Find('ppm2/*.txt', 'DATA')
 	fTarget = ffind\sub(1, -5)
 	-- maybe joined server with old ppm2 and new clear _current was generated
 	if not file.Exists('ppm2/' .. fTarget .. '.dat', 'DATA')
@@ -28,7 +33,7 @@ for ffind in *file.Find('ppm2/*.txt', 'DATA')
 		if json
 			TagCompound = DLib.NBT.TagCompound()
 			for key, value in pairs json
-				switch type(value)
+				switch luatype(value)
 					when 'string'
 						TagCompound\AddString(key, value)
 					when 'number'
@@ -39,7 +44,7 @@ for ffind in *file.Find('ppm2/*.txt', 'DATA')
 						-- assume color
 						TagCompound\AddByteArray(key, {value.r - 128, value.g - 128, value.b - 128, value.a - 128}) if value.r and value.g and value.b and value.a
 					else
-						error(type(value))
+						error(luatype(value))
 			buf = DLib.BytesBuffer()
 			TagCompound\WriteFile(buf)
 			stream = file.Open('ppm2/' .. fTarget .. '.dat', 'wb', 'DATA')
@@ -53,11 +58,11 @@ class PonyDataInstance
 	@DATA_DIR_BACKUP = "ppm2/backups/"
 
 	@FindFiles = =>
-		output = [str\sub(1, #str - 4) for str in *file.Find(@DATA_DIR .. '*', 'DATA') when not str\find('.bak.dat')]
+		output = [str\sub(1, #str - 4) for _, str in ipairs file.Find(@DATA_DIR .. '*', 'DATA') when not str\find('.bak.dat')]
 		return output
 
 	@FindInstances = =>
-		output = [@(str\sub(1, #str - 4)) for str in *file.Find(@DATA_DIR .. '*', 'DATA') when not str\find('.bak.dat')]
+		output = [@(str\sub(1, #str - 4)) for _, str in ipairs file.Find(@DATA_DIR .. '*', 'DATA') when not str\find('.bak.dat')]
 		return output
 
 	@PONY_DATA = PPM2.PonyDataRegistry
@@ -67,11 +72,11 @@ class PonyDataInstance
 
 	for key, data in pairs @PONY_DATA
 		continue unless data.enum
-		data.enum = [arg\upper() for arg in *data.enum]
+		data.enum = [arg\upper() for _, arg in ipairs data.enum]
 		data.enumMapping = {}
 		data.enumMappingBackward = {}
 		i = -1
-		for enumVal in *data.enum
+		for _, enumVal in ipairs data.enum
 			i += 1
 			data.enumMapping[i] = enumVal
 			data.enumMappingBackward[enumVal] = i
@@ -93,7 +98,7 @@ class PonyDataInstance
 			@__base["GetEnum#{getFunc}"] = @__base["Get#{getFunc}Enum"]
 		@__base["Reset#{getFunc}"] = => @["Set#{getFunc}"](@, default())
 		@__base["Set#{getFunc}"] = (val = defValue, ...) =>
-			if type(val) == 'string' and enumMappingBackward
+			if luatype(val) == 'string' and enumMappingBackward
 				newVal = enumMappingBackward[val\upper()]
 				val = newVal if newVal
 			newVal = fix(val)
@@ -102,7 +107,7 @@ class PonyDataInstance
 			@ValueChanges(key, oldVal, newVal, ...)
 
 	WriteNetworkData: =>
-		for {:strName, :writeFunc, :getName, :defValue} in *PPM2.NetworkedPonyData.NW_Vars
+		for _, {:strName, :writeFunc, :getName, :defValue} in ipairs PPM2.NetworkedPonyData.NW_Vars
 			if @["Get#{getName}"]
 				writeFunc(@["Get#{getName}"](@))
 			else
@@ -110,30 +115,26 @@ class PonyDataInstance
 
 	Copy: (fileName = @filename) =>
 		copyOfData = {}
+
 		for key, val in pairs @dataTable
-			switch type(val)
-				when 'number'
+			switch luatype(val)
+				when 'number', 'string', 'boolean'
 					copyOfData[key] = val
-				when 'string'
-					copyOfData[key] = val
-				when 'boolean'
-					copyOfData[key] = val
-				when 'table'
-					{:r, :g, :b} = val
-					if r and g and b
-						copyOfData[key] = Color(r, g, b)
+				when 'table', 'Color'
+					if IsColor(val)
+						copyOfData[key] = Color(val)
+					else
+						copyOfData[key] = Color(255, 255, 255)
 		newData = @@(fileName, copyOfData, false)
 		return newData
 	CreateCustomNetworkObject: (goingToNetwork = false, ply = LocalPlayer(), ...) =>
 		newData = PPM2.NetworkedPonyData(nil, ply)
 		newData\SetIsGoingToNetwork(goingToNetwork)
-		newData\SetEntity(ply)
 		@ApplyDataToObject(newData, ...)
 		return newData
 	CreateNetworkObject: (goingToNetwork = true, ...) =>
 		newData = PPM2.NetworkedPonyData(nil, LocalPlayer())
 		newData\SetIsGoingToNetwork(goingToNetwork)
-		newData\SetEntity(LocalPlayer())
 		@ApplyDataToObject(newData, ...)
 		return newData
 	ApplyDataToObject: (target, ...) =>
@@ -170,7 +171,7 @@ class PonyDataInstance
 		if mapData.enum and type(value) == 'string'
 			mapData.fix(mapData.enumMappingBackward[value\upper()])
 		elseif mapData.type == 'COLOR'
-			if value.r and value.g and value.b and value.a
+			if IsColor(value)
 				mapData.fix(Color(value))
 			else
 				mapData.fix(Color(value[1] + 128, value[2] + 128, value[3] + 128, value[4] + 128))
@@ -182,8 +183,10 @@ class PonyDataInstance
 		else
 			mapData.fix(value)
 
+	GetExtraBackupPath: => "#{@@DATA_DIR_BACKUP}#{@filename}_bak_#{os.date('%S_%M_%H-%d_%m_%Y', os.time())}.dat"
+
 	SetupData: (data = @NBTTagCompound, force = false, doBackup = false) =>
-		if type(data) == 'NBTCompound'
+		if luatype(data) == 'NBTCompound'
 			data = data\GetValue()
 		if doBackup or not force
 			makeBackup = false
@@ -194,14 +197,13 @@ class PonyDataInstance
 					mapData = @@PONY_DATA[map]
 					value = @GetValueFromNBT(mapData, value2)
 					if mapData.enum
-						if type(value) == 'string' and not mapData.enumMappingBackward[value\upper()] or type(value) == 'number' and not mapData.enumMapping[value]
+						if luatype(value) == 'string' and not mapData.enumMappingBackward[value\upper()] or luatype(value) == 'number' and not mapData.enumMapping[value]
 							return @@ERR_MISSING_CONTENT if not force
 							makeBackup = true
 							break
 			if doBackup and makeBackup and @exists
-				bkName = "#{@@DATA_DIR_BACKUP}#{@filename}_bak_#{os.date('%S_%M_%H-%d_%m_%Y', os.time())}.dat"
 				fRead = file.Read(@fpath, 'DATA')
-				file.Write(bkName, fRead)
+				file.Write(@GetExtraBackupPath(), fRead)
 
 		for key, value2 in pairs(data)
 			key = key\lower()
@@ -219,7 +221,6 @@ class PonyDataInstance
 		@filenameFull = "#{filename}.dat"
 		@fpath = "#{@@DATA_DIR}#{filename}.dat"
 		@preview = "#{@@DATA_DIR}thumbnails/#{filename}.png"
-		@fpathBackup = "#{@@DATA_DIR}#{filename}.bak.dat"
 		@fpathFull = "data/#{@@DATA_DIR}#{filename}.dat"
 		@isOpen = @filename ~= nil
 		@exists = file.Exists(@fpath, 'DATA')
@@ -370,9 +371,7 @@ class PonyDataInstance
 			render.PopRenderTarget()
 
 	Save: (doBackup = true, preview = true) =>
-		if doBackup and @exists
-			fRead = file.Read(@fpath, 'DATA')
-			file.Write(@fpathBackup, fRead)
+		file.Write(@GetExtraBackupPath(), file.Read(@fpath, 'DATA')) if doBackup and @exists
 		buf = @SaveAs(@fpath)
 		@SavePreview(@preview) if preview
 		@exists = true

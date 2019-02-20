@@ -1,19 +1,24 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 ALLOW_FLIGHT = CreateConVar('ppm2_sv_flight', '1', {FCVAR_REPLICATED, FCVAR_NOTIFY}, 'Allow flight for pegasus and alicorns. It obeys PlayerNoClip hook.')
 FORCE_ALLOW_FLIGHT = CreateConVar('ppm2_sv_flight_force', '0', {FCVAR_REPLICATED, FCVAR_NOTIFY}, 'Ignore PlayerNoClip hook')
@@ -22,9 +27,8 @@ FLIGHT_DAMAGE = CreateConVar('ppm2_sv_flightdmg', '1', {FCVAR_REPLICATED, FCVAR_
 UNICORN_FLIGHT = CreateConVar('ppm2_sv_unicorn_flight', '1', {FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY}, 'Also allow "flight" (self-levitation) for unicorns when ppm2_sv_flight is enabled.')
 
 class PonyflyController
-	new: (data) =>
-		@controller = data
-		@ent = data.ent
+	new: (controller) =>
+		@controller = controller
 		@speedMult = 0.5
 		@speedMultDirections = 1.25
 		@dragMult = 0.95
@@ -40,35 +44,34 @@ class PonyflyController
 		@lastVelocity = Vector(0, 0, 0)
 		@lastState = false
 
-	GetEntity: => @ent
+	GetEntity: => @controller\GetEntity()
 	GetData: => @controller
 	GetController: => @controller
 
 	Switch: (status = false) =>
-		@ent = @controller.ent
-		return if not IsValid(@ent) or not @ent\IsPlayer()
+		return if not IsValid(@GetEntity()) or not @GetEntity()\IsPlayer()
 		return if @lastState == status
 		@lastState = status
 		if PPM2.CanPonyUseMagic(@controller)
 			cont = @controller\GetMagicController()
 			cont\SetMagicLayerActive("fly", status) if cont
 		if not status
-			{:p, :y, :r} = @ent\EyeAngles()
+			{:p, :y, :r} = @GetEntity()\EyeAngles()
 			newAng = Angle(p, y, 0)
-			@ent\SetEyeAngles(newAng)
-			@ent\SetMoveType(MOVETYPE_WALK)
+			@GetEntity()\SetEyeAngles(newAng)
+			@GetEntity()\SetMoveType(MOVETYPE_WALK)
 			@roll = 0
 			@pitch = 0
 			@yaw = 0
-			@ent\SetVelocity(@lastVelocity * 50)
+			@GetEntity()\SetVelocity(@lastVelocity * 50)
 			@lastVelocity = Vector(0, 0, 0)
 		else
 			@lastVelocity = Vector(0, 0, 0)
-			@ent\SetVelocity(-@ent\GetVelocity() * .97)
-			@ent\SetMoveType(MOVETYPE_CUSTOM)
-			@obbCenter = @ent\OBBCenter()
-			@obbMins = @ent\OBBMins()
-			@obbMaxs = @ent\OBBMaxs()
+			@GetEntity()\SetVelocity(-@GetEntity()\GetVelocity() * .97)
+			@GetEntity()\SetMoveType(MOVETYPE_CUSTOM)
+			@obbCenter = @GetEntity()\OBBCenter()
+			@obbMins = @GetEntity()\OBBMins()
+			@obbMaxs = @GetEntity()\OBBMaxs()
 			@roll = 0
 			@pitch = 0
 			@yaw = 0
@@ -145,7 +148,7 @@ class PonyflyController
 			y += @yaw
 			r = @roll + math.sin(RealTimeL()) * 2
 			newAng = Angle(p, y, r)
-			@ent\SetEyeAngles(newAng)
+			@GetEntity()\SetEyeAngles(newAng)
 
 		if not hit
 			velocity.x *= dragCalc
@@ -168,7 +171,7 @@ class PonyflyController
 		cmd\SetButtons(cmd\GetButtons() - IN_JUMP) if cmd\KeyDown(IN_JUMP)
 
 	FinishMove: (movedata) =>
-		nativeEntity = @ent\GetEntity()
+		nativeEntity = @GetEntity()
 		mvPos = movedata\GetOrigin()
 		pos = nativeEntity\GetPos()
 		rpos = pos

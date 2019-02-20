@@ -1,19 +1,24 @@
 
 --
--- Copyright (C) 2017-2018 DBot
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
---
---     http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
---
+-- Copyright (C) 2017-2019 DBot
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 
 import PPM2, ents, LocalPlayer, SERVER, NULL, CLIENT, EF_BONEMERGE from _G
 
@@ -28,8 +33,8 @@ ents_GetAll = ->
 	return TRACKED_ENTS
 
 if CLIENT
-	for ent in *ents.GetAll()
-		if ent.isPonyLegsModel
+	for _, ent in ipairs ents.GetAll()
+		if ent.isPonyLegsModel or ent.isPonyPropModel
 			ent\Remove()
 
 PPM2.BODYGROUP_SKELETON = 0
@@ -42,47 +47,47 @@ PPM2.BODYGROUP_TAIL = 6
 PPM2.BODYGROUP_CMARK = 7
 PPM2.BODYGROUP_EYELASH = 8
 
--- 0	LrigPelvis
--- 1	LrigSpine1
--- 2	LrigSpine2
--- 3	LrigRibcage
--- 4	LrigNeck1
--- 5	LrigNeck2
--- 6	LrigNeck3
--- 7	LrigScull
--- 8	Lrig_LEG_BL_Femur
--- 9	Lrig_LEG_BL_Tibia
--- 10	Lrig_LEG_BL_LargeCannon
--- 11	Lrig_LEG_BL_PhalanxPrima
--- 12	Lrig_LEG_BL_RearHoof
--- 13	Lrig_LEG_BR_Femur
--- 14	Lrig_LEG_BR_Tibia
--- 15	Lrig_LEG_BR_LargeCannon
--- 16	Lrig_LEG_BR_PhalanxPrima
--- 17	Lrig_LEG_BR_RearHoof
--- 18	Lrig_LEG_FL_Scapula
--- 19	Lrig_LEG_FL_Humerus
--- 20	Lrig_LEG_FL_Radius
--- 21	Lrig_LEG_FL_Metacarpus
--- 22	Lrig_LEG_FL_PhalangesManus
--- 23	Lrig_LEG_FL_FrontHoof
--- 24	Lrig_LEG_FR_Scapula
--- 25	Lrig_LEG_FR_Humerus
--- 26	Lrig_LEG_FR_Radius
--- 27	Lrig_LEG_FR_Metacarpus
--- 28	Lrig_LEG_FR_PhalangesManus
--- 29	Lrig_LEG_FR_FrontHoof
--- 30	Mane01
--- 31	Mane02
--- 32	Mane03
--- 33	Mane04
--- 34	Mane05
--- 35	Mane06
--- 36	Mane07
--- 37	Mane03_tip
--- 38	Tail01
--- 39	Tail02
--- 40	Tail03
+-- 0    LrigPelvis
+-- 1    LrigSpine1
+-- 2    LrigSpine2
+-- 3    LrigRibcage
+-- 4    LrigNeck1
+-- 5    LrigNeck2
+-- 6    LrigNeck3
+-- 7    LrigScull
+-- 8    Lrig_LEG_BL_Femur
+-- 9    Lrig_LEG_BL_Tibia
+-- 10   Lrig_LEG_BL_LargeCannon
+-- 11   Lrig_LEG_BL_PhalanxPrima
+-- 12   Lrig_LEG_BL_RearHoof
+-- 13   Lrig_LEG_BR_Femur
+-- 14   Lrig_LEG_BR_Tibia
+-- 15   Lrig_LEG_BR_LargeCannon
+-- 16   Lrig_LEG_BR_PhalanxPrima
+-- 17   Lrig_LEG_BR_RearHoof
+-- 18   Lrig_LEG_FL_Scapula
+-- 19   Lrig_LEG_FL_Humerus
+-- 20   Lrig_LEG_FL_Radius
+-- 21   Lrig_LEG_FL_Metacarpus
+-- 22   Lrig_LEG_FL_PhalangesManus
+-- 23   Lrig_LEG_FL_FrontHoof
+-- 24   Lrig_LEG_FR_Scapula
+-- 25   Lrig_LEG_FR_Humerus
+-- 26   Lrig_LEG_FR_Radius
+-- 27   Lrig_LEG_FR_Metacarpus
+-- 28   Lrig_LEG_FR_PhalangesManus
+-- 29   Lrig_LEG_FR_FrontHoof
+-- 30   Mane01
+-- 31   Mane02
+-- 32   Mane03
+-- 33   Mane04
+-- 34   Mane05
+-- 35   Mane06
+-- 36   Mane07
+-- 37   Mane03_tip
+-- 38   Tail01
+-- 39   Tail02
+-- 40   Tail03
 
 class DefaultBodygroupController extends PPM2.ControllerChildren
 	@AVALIABLE_CONTROLLERS = {}
@@ -103,102 +108,119 @@ class DefaultBodygroupController extends PPM2.ControllerChildren
 	@COOLDOWN_TIME = 5
 	@COOLDOWN_MAX_COUNT = 4
 
-	for i = 1, 8
-		@['BONE_MANE_' .. i] = 29 + i
+	@BONE_MANE_1 = 'Mane01'
+	@BONE_MANE_2 = 'Mane02'
+	@BONE_MANE_3 = 'Mane03'
+	@BONE_MANE_4 = 'Mane04'
+	@BONE_MANE_5 = 'Mane05'
+	@BONE_MANE_6 = 'Mane06'
+	@BONE_MANE_7 = 'Mane07'
+	@BONE_MANE_8 = 'Mane03_tip'
 
-	@BONE_TAIL_1 = 38
-	@BONE_TAIL_2 = 39
-	@BONE_TAIL_3 = 40
+	@BONE_TAIL_1 = 'Tail01'
+	@BONE_TAIL_2 = 'Tail02'
+	@BONE_TAIL_3 = 'Tail03'
 
-	@BONE_SPINE_ROOT = 0
-	@BONE_SPINE = 2
+	@BONE_SPINE_ROOT = 'LrigPelvis'
+	@BONE_SPINE = 'LrigSpine2'
+
+	Remap: =>
+		mapping = {
+			'BONE_SPINE_ROOT'
+			'BONE_TAIL_1', 'BONE_TAIL_2', 'BONE_TAIL_3'
+			'BONE_SPINE', 'BONE_MANE_1', 'BONE_MANE_2'
+			'BONE_MANE_3', 'BONE_MANE_4', 'BONE_MANE_5'
+			'BONE_MANE_6', 'BONE_MANE_7', 'BONE_MANE_8'
+		}
+
+		@validSkeleton = true
+
+		for _, name in ipairs mapping
+			@[name] = @GetEntity()\LookupBone(@@[name])
+
+			if not @[name]
+				@validSkeleton = false
 
 	new: (controller) =>
+		super(controller)
 		@isValid = true
-		@ent = controller.ent
-		@entID = controller.entID
-		@controller = controller
 		@objID = @@NEXT_OBJ_ID
 		@@NEXT_OBJ_ID += 1
 		@lastPAC3BoneReset = 0
-		PPM2.DebugPrint('Created new bodygroups controller for ', @ent, ' as part of ', controller, '; internal ID is ', @objID)
+		@Remap()
 
-	__tostring: => "[#{@@__name}:#{@objID}|#{@ent}]"
+		PPM2.DebugPrint('Created new bodygroups controller for ', @GetEntity(), ' as part of ', controller, '; internal ID is ', @objID)
+
 	IsValid: => @isValid
-	GetData: => @controller
-	GrabData: (str, ...) => @controller['Get' .. str](@controller, ...)
-	GetEntity: => @ent
-	GetEntityID: => @entID
-	GetDataID: => @entID
 
 	@ATTACHMENT_EYES = 4
 	@ATTACHMENT_EYES_NAME = 'eyes'
 
 	CreateSocksModel: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		return @socksModel if IsValid(@socksModel)
-		for ent in *ents_GetAll()
-			if ent.isPonyPropModel and ent.isSocks and ent.manePlayer == @ent
+		for _, ent in ipairs ents_GetAll()
+			if ent.isPonyPropModel and ent.isSocks and ent.manePlayer == @GetEntity()
 				@socksModel = ent
 				@GetData()\SetSocksModel(@socksModel)
-				PPM2.DebugPrint('Resuing ', @socksModel, ' as socks model for ', @ent)
+				PPM2.DebugPrint('Resuing ', @socksModel, ' as socks model for ', @GetEntity())
 				return ent
 
 		with @socksModel = ClientsideModel('models/props_pony/ppm/cosmetics/ppm_socks.mdl')
 			.isPonyPropModel = true
 			.isSocks = true
-			.manePlayer = @ent
+			.manePlayer = @GetEntity()
 			\DrawShadow(true)
-			\SetPos(@ent\EyePos())
+			\SetPos(@GetEntity()\EyePos())
 			\Spawn()
 			\Activate()
 			\SetNoDraw(true)
-			\SetParent(@ent\GetEntity())
+			\SetParent(@GetEntity())
 			\AddEffects(EF_BONEMERGE)
 
-		PPM2.DebugPrint('Creating new socks model for ', @ent, ' as ', @socksModel)
+		PPM2.DebugPrint('Creating new socks model for ', @GetEntity(), ' as ', @socksModel)
 		@GetData()\SetSocksModel(@socksModel)
 		return @socksModel
 
 	CreateNewSocksModel: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		return @newSocksModel if IsValid(@newSocksModel)
-		for ent in *ents_GetAll()
-			if ent.isPonyPropModel and ent.isNewSocks and ent.manePlayer == @ent
+		for _, ent in ipairs ents_GetAll()
+			if ent.isPonyPropModel and ent.isNewSocks and ent.manePlayer == @GetEntity()
 				@newSocksModel = ent
 				@GetData()\SetNewSocksModel(@newSocksModel)
-				PPM2.DebugPrint('Resuing ', @newSocksModel, ' as socks model for ', @ent)
+				PPM2.DebugPrint('Resuing ', @newSocksModel, ' as socks model for ', @GetEntity())
 				return ent
 
 		with @newSocksModel = ClientsideModel('models/props_pony/ppm/cosmetics/ppm2_socks.mdl')
 			.isPonyPropModel = true
 			.isNewSocks = true
-			.manePlayer = @ent
+			.manePlayer = @GetEntity()
 			\DrawShadow(true)
-			\SetPos(@ent\EyePos())
+			\SetPos(@GetEntity()\EyePos())
 			\Spawn()
 			\Activate()
 			\SetNoDraw(true)
-			\SetParent(@ent\GetEntity())
+			\SetParent(@GetEntity())
 			\AddEffects(EF_BONEMERGE)
 
-		PPM2.DebugPrint('Creating new socks model for ', @ent, ' as ', @newSocksModel)
+		PPM2.DebugPrint('Creating new socks model for ', @GetEntity(), ' as ', @newSocksModel)
 		@GetData()\SetNewSocksModel(@newSocksModel)
 		return @newSocksModel
 
 	CreateNewSocksModelIfNotExists: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		@CreateNewSocksModel(force) if not IsValid(@newSocksModel)
 		return NULL if not IsValid(@newSocksModel)
-		@newSocksModel\SetParent(@ent\GetEntity()) if IsValid(@ent)
+		@newSocksModel\SetParent(@GetEntity()) if IsValid(@GetEntity())
 		@GetData()\SetNewSocksModel(@newSocksModel)
 		return @newSocksModel
 
 	CreateSocksModelIfNotExists: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		@CreateSocksModel(force) if not IsValid(@socksModel)
 		return NULL if not IsValid(@socksModel)
-		@socksModel\SetParent(@ent\GetEntity()) if IsValid(@ent)
+		@socksModel\SetParent(@GetEntity()) if IsValid(@GetEntity())
 		@GetData()\SetSocksModel(@socksModel)
 		return @socksModel
 
@@ -215,8 +237,8 @@ class DefaultBodygroupController extends PPM2.ControllerChildren
 
 	ApplyRace: =>
 		return unless @isValid
-		return NULL if not IsValid(@ent)
-		with @ent
+		return NULL if not IsValid(@GetEntity())
+		with @GetEntity()
 			switch @GetData()\GetRace()
 				when PPM2.RACE_EARTH
 					\SetBodygroup(@@BODYGROUP_HORN, 1)
@@ -233,42 +255,48 @@ class DefaultBodygroupController extends PPM2.ControllerChildren
 
 	ResetTail: =>
 		return if not CLIENT
-		with @ent
-			\ManipulateBoneScale2Safe(@@BONE_TAIL_1, Vector(1, 1, 1))
-			\ManipulateBoneScale2Safe(@@BONE_TAIL_2, Vector(1, 1, 1))
-			\ManipulateBoneScale2Safe(@@BONE_TAIL_3, Vector(1, 1, 1))
-			\ManipulateBoneAngles2Safe(@@BONE_TAIL_1, Angle(0, 0, 0))
-			\ManipulateBoneAngles2Safe(@@BONE_TAIL_2, Angle(0, 0, 0))
-			\ManipulateBoneAngles2Safe(@@BONE_TAIL_3, Angle(0, 0, 0))
-			\ManipulateBonePosition2Safe(@@BONE_TAIL_1, Vector(0, 0, 0))
-			\ManipulateBonePosition2Safe(@@BONE_TAIL_2, Vector(0, 0, 0))
-			\ManipulateBonePosition2Safe(@@BONE_TAIL_3, Vector(0, 0, 0))
+		return if not @validSkeleton
+		with @GetEntity()
+			\ManipulateBoneScale2Safe(@BONE_TAIL_1, LVector(1, 1, 1))
+			\ManipulateBoneScale2Safe(@BONE_TAIL_2, LVector(1, 1, 1))
+			\ManipulateBoneScale2Safe(@BONE_TAIL_3, LVector(1, 1, 1))
+			\ManipulateBoneAngles2Safe(@BONE_TAIL_1, Angle(0, 0, 0))
+			\ManipulateBoneAngles2Safe(@BONE_TAIL_2, Angle(0, 0, 0))
+			\ManipulateBoneAngles2Safe(@BONE_TAIL_3, Angle(0, 0, 0))
+			\ManipulateBonePosition2Safe(@BONE_TAIL_1, LVector(0, 0, 0))
+			\ManipulateBonePosition2Safe(@BONE_TAIL_2, LVector(0, 0, 0))
+			\ManipulateBonePosition2Safe(@BONE_TAIL_3, LVector(0, 0, 0))
 
 	ResetBack: =>
 		return if not CLIENT
-		with @ent
-			\ManipulateBoneScale2Safe(@@BONE_SPINE_ROOT, Vector(1, 1, 1))
-			\ManipulateBoneScale2Safe(@@BONE_SPINE, Vector(1, 1, 1))
-			\ManipulateBoneAngles2Safe(@@BONE_SPINE_ROOT, Angle(0, 0, 0))
-			\ManipulateBoneAngles2Safe(@@BONE_SPINE, Angle(0, 0, 0))
-			\ManipulateBonePosition2Safe(@@BONE_SPINE_ROOT, Vector(0, 0, 0))
-			\ManipulateBonePosition2Safe(@@BONE_SPINE, Vector(0, 0, 0))
+		return if not @validSkeleton
+		with @GetEntity()
+			\ManipulateBoneScale2Safe(@BONE_SPINE_ROOT, LVector(1, 1, 1))
+			\ManipulateBoneScale2Safe(@BONE_SPINE, LVector(1, 1, 1))
+			\ManipulateBoneAngles2Safe(@BONE_SPINE_ROOT, Angle(0, 0, 0))
+			\ManipulateBoneAngles2Safe(@BONE_SPINE, Angle(0, 0, 0))
+			\ManipulateBonePosition2Safe(@BONE_SPINE_ROOT, LVector(0, 0, 0))
+			\ManipulateBonePosition2Safe(@BONE_SPINE, LVector(0, 0, 0))
 
 	ResetMane: =>
 		return if not CLIENT
-		vec1, ang, vec2 = Vector(1, 1, 1), Angle(0, 0, 0), Vector(0, 0, 0)
-		with @ent
+		return if not @validSkeleton
+		vec1, ang, vec2 = LVector(1, 1, 1), Angle(0, 0, 0), LVector(0, 0, 0)
+		with @GetEntity()
 			for i = 1, 7
-				\ManipulateBoneScale2Safe(@@['BONE_MANE_' .. i], vec1)
-				\ManipulateBoneAngles2Safe(@@['BONE_MANE_' .. i], ang)
-				\ManipulateBonePosition2Safe(@@['BONE_MANE_' .. i], vec2)
+				\ManipulateBoneScale2Safe(@['BONE_MANE_' .. i], vec1)
+				\ManipulateBoneAngles2Safe(@['BONE_MANE_' .. i], ang)
+				\ManipulateBonePosition2Safe(@['BONE_MANE_' .. i], vec2)
 
 	ResetBodygroups: =>
 		return unless @isValid
-		return unless IsValid(@ent)
-		return unless @ent\GetBodyGroups()
-		for grp in *@ent\GetBodyGroups()
-			@ent\SetBodygroup(grp.id, 0)
+		return unless IsValid(@GetEntity())
+		return unless @GetEntity()\GetBodyGroups()
+		return if not @validSkeleton
+
+		for _, grp in ipairs @GetEntity()\GetBodyGroups()
+			@GetEntity()\SetBodygroup(grp.id, 0)
+
 		if @lastPAC3BoneReset < RealTimeL()
 			@ResetTail()
 			@ResetMane()
@@ -279,69 +307,76 @@ class DefaultBodygroupController extends PPM2.ControllerChildren
 		@socksModel\Remove() if IsValid(@socksModel)
 		@newSocksModel\Remove() if IsValid(@newSocksModel)
 
-	UpdateTailSize: (ent = @ent) =>
+	UpdateTailSize: (ent = @GetEntity()) =>
 		return if not CLIENT
+		return if @GetEntity().Alive and not @GetEntity()\Alive()
+		return if not @validSkeleton
 		size = @GetData()\GetTailSize()
 		size *= @GetData()\GetPonySize() if not ent\IsRagdoll() and not ent\IsNJPony()
-		vec = Vector(1, 1, 1)
+		vec = LVector(1, 1, 1)
 		vecTail = vec * size
-		vecTailPos = Vector((size - 1) * 8, 0, 0)
+		vecTailPos = LVector((size - 1) * 8, 0, 0)
 
 		boneAnimTable = ent.pac_boneanim and ent.pac_boneanim.positions or {}
-		emptyVector = Vector(0, 0, 0)
+		emptyLVector = LVector(0, 0, 0)
 
 		with ent
-			\ManipulateBoneScale2Safe(@@BONE_TAIL_1, vecTail)
-			\ManipulateBoneScale2Safe(@@BONE_TAIL_2, vecTail)
-			\ManipulateBoneScale2Safe(@@BONE_TAIL_3, vecTail)
+			\ManipulateBoneScale2Safe(@BONE_TAIL_1, vecTail)
+			\ManipulateBoneScale2Safe(@BONE_TAIL_2, vecTail)
+			\ManipulateBoneScale2Safe(@BONE_TAIL_3, vecTail)
 
-			--\ManipulateBonePosition2Safe(@@BONE_TAIL_1, vecTail + (boneAnimTable[@@BONE_TAIL_1] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_TAIL_2, vecTailPos + (boneAnimTable[@@BONE_TAIL_2] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_TAIL_3, vecTailPos + (boneAnimTable[@@BONE_TAIL_3] or emptyVector))
+			--\ManipulateBonePosition2Safe(@BONE_TAIL_1, vecTail + (boneAnimTable[@BONE_TAIL_1] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_TAIL_2, vecTailPos + (boneAnimTable[@BONE_TAIL_2] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_TAIL_3, vecTailPos + (boneAnimTable[@BONE_TAIL_3] or emptyLVector))
 
-	UpdateManeSize: (ent = @ent) =>
+	UpdateManeSize: (ent = @GetEntity()) =>
 		return if not CLIENT
 		return if ent\IsRagdoll()
 		return if ent\IsNJPony()
+		return if @GetEntity().Alive and not @GetEntity()\Alive()
+		return if not @validSkeleton
 		size = @GetData()\GetPonySize()
-		vecMane = Vector(1, 1, 1) * size
+		vecMane = LVector(1, 1, 1) * size
 
 		boneAnimTable = ent.pac_boneanim and ent.pac_boneanim.positions or {}
-		emptyVector = Vector(0, 0, 0)
+		emptyLVector = LVector(0, 0, 0)
 
 		with ent
-			\ManipulateBoneScale2Safe(@@BONE_MANE_1, vecMane)
-			\ManipulateBoneScale2Safe(@@BONE_MANE_2, vecMane)
-			\ManipulateBoneScale2Safe(@@BONE_MANE_3, vecMane)
-			\ManipulateBoneScale2Safe(@@BONE_MANE_4, vecMane)
-			\ManipulateBoneScale2Safe(@@BONE_MANE_5, vecMane)
-			\ManipulateBoneScale2Safe(@@BONE_MANE_6, vecMane)
-			\ManipulateBoneScale2Safe(@@BONE_MANE_7, vecMane)
-			\ManipulateBoneScale2Safe(@@BONE_MANE_8, vecMane)
+			\ManipulateBoneScale2Safe(@BONE_MANE_1, vecMane)
+			\ManipulateBoneScale2Safe(@BONE_MANE_2, vecMane)
+			\ManipulateBoneScale2Safe(@BONE_MANE_3, vecMane)
+			\ManipulateBoneScale2Safe(@BONE_MANE_4, vecMane)
+			\ManipulateBoneScale2Safe(@BONE_MANE_5, vecMane)
+			\ManipulateBoneScale2Safe(@BONE_MANE_6, vecMane)
+			\ManipulateBoneScale2Safe(@BONE_MANE_7, vecMane)
+			\ManipulateBoneScale2Safe(@BONE_MANE_8, vecMane)
 
-			\ManipulateBonePosition2Safe(@@BONE_MANE_1, Vector(-(size - 1) * 4, (1 - size) * 3, 0) + (boneAnimTable[@@BONE_MANE_1] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_MANE_2, Vector(-(size - 1) * 4, (size - 1) * 2, 1) + (boneAnimTable[@@BONE_MANE_2] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_MANE_3, Vector((size - 1) * 2, 0, 0) +               (boneAnimTable[@@BONE_MANE_3] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_MANE_4, Vector(1 - size, (1 - size) * 4, 1 - size) + (boneAnimTable[@@BONE_MANE_4] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_MANE_5, Vector((size - 1) * 4, (1 - size) * 2, (size - 1) * 3) + (boneAnimTable[@@BONE_MANE_5] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_MANE_6, Vector(0, 0, -(size - 1) * 2) +              (boneAnimTable[@@BONE_MANE_6] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_MANE_7, Vector(0, 0, -(size - 1) * 2) +              (boneAnimTable[@@BONE_MANE_7] or emptyVector))
+			\ManipulateBonePosition2Safe(@BONE_MANE_1, LVector(-(size - 1) * 4, (1 - size) * 3, 0) + (boneAnimTable[@BONE_MANE_1] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_MANE_2, LVector(-(size - 1) * 4, (size - 1) * 2, 1) + (boneAnimTable[@BONE_MANE_2] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_MANE_3, LVector((size - 1) * 2, 0, 0) +               (boneAnimTable[@BONE_MANE_3] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_MANE_4, LVector(1 - size, (1 - size) * 4, 1 - size) + (boneAnimTable[@BONE_MANE_4] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_MANE_5, LVector((size - 1) * 4, (1 - size) * 2, (size - 1) * 3) + (boneAnimTable[@BONE_MANE_5] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_MANE_6, LVector(0, 0, -(size - 1) * 2) +              (boneAnimTable[@BONE_MANE_6] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_MANE_7, LVector(0, 0, -(size - 1) * 2) +              (boneAnimTable[@BONE_MANE_7] or emptyLVector))
 
-	UpdateBack: (ent = @ent) =>
+	UpdateBack: (ent = @GetEntity()) =>
 		return if not CLIENT
 		return if ent\IsRagdoll()
 		return if ent\IsNJPony()
-		vecModify = Vector(-(@GetData()\GetBackSize() - 1) * 2, 0, 0)
-		vecModify2 = Vector((@GetData()\GetBackSize() - 1) * 5, 0, 0)
+		return if @GetEntity().Alive and not @GetEntity()\Alive()
+		return if not @validSkeleton
+
+		vecModify = LVector(-(@GetData()\GetBackSize() - 1) * 2, 0, 0)
+		vecModify2 = LVector((@GetData()\GetBackSize() - 1) * 5, 0, 0)
 
 		boneAnimTable = ent.pac_boneanim and ent.pac_boneanim.positions or {}
-		emptyVector = Vector(0, 0, 0)
+		emptyLVector = LVector(0, 0, 0)
 
 		with ent
-			\ManipulateBonePosition2Safe(@@BONE_SPINE_ROOT, vecModify + (boneAnimTable[@@BONE_SPINE_ROOT] or emptyVector))
-			\ManipulateBonePosition2Safe(@@BONE_SPINE, vecModify2 + (boneAnimTable[@@BONE_SPINE] or emptyVector))
+			\ManipulateBonePosition2Safe(@BONE_SPINE_ROOT, vecModify + (boneAnimTable[@BONE_SPINE_ROOT] or emptyLVector))
+			\ManipulateBonePosition2Safe(@BONE_SPINE, vecModify2 + (boneAnimTable[@BONE_SPINE] or emptyLVector))
 
-	SlowUpdate: (createModels = CLIENT, ent = @ent, force = false) =>
+	SlowUpdate: (createModels = CLIENT, ent = @GetEntity(), force = false) =>
 		return if not IsValid(ent)
 		return if not ent\IsPony()
 		with ent
@@ -358,9 +393,9 @@ class DefaultBodygroupController extends PPM2.ControllerChildren
 
 	ApplyBodygroups: (createModels = CLIENT, force = false) =>
 		return unless @isValid
-		return if not IsValid(@ent)
+		return if not IsValid(@GetEntity())
 		@ResetBodygroups()
-		return if not @ent\IsPony()
+		return if not @GetEntity()\IsPony()
 		@SlowUpdate(createModels, force)
 
 	Remove: =>
@@ -368,25 +403,24 @@ class DefaultBodygroupController extends PPM2.ControllerChildren
 		@ResetBodygroups()
 		@isValid = false
 
-	@TAIL_BONE1 = 38
-	@TAIL_BONE2 = 39
-	@TAIL_BONE3 = 40
 	DataChanges: (state) =>
 		return unless @isValid
-		return if not IsValid(@ent)
+		return if not IsValid(@GetEntity())
+		@Remap()
+
 		switch state\GetKey()
 			when 'ManeType'
-				@ent\SetBodygroup(@@BODYGROUP_MANE_UPPER, @GetData()\GetManeType())
+				@GetEntity()\SetBodygroup(@@BODYGROUP_MANE_UPPER, @GetData()\GetManeType())
 			when 'ManeTypeLower'
-				@ent\SetBodygroup(@@BODYGROUP_MANE_LOWER, @GetData()\GetManeTypeLower())
+				@GetEntity()\SetBodygroup(@@BODYGROUP_MANE_LOWER, @GetData()\GetManeTypeLower())
 			when 'TailType'
-				@ent\SetBodygroup(@@BODYGROUP_TAIL, @GetData()\GetTailType())
+				@GetEntity()\SetBodygroup(@@BODYGROUP_TAIL, @GetData()\GetTailType())
 			when 'TailSize', 'PonySize'
 				@UpdateTailSize()
 			when 'EyelashType'
-				@ent\SetBodygroup(@@BODYGROUP_EYELASH, @GetData()\GetEyelashType())
+				@GetEntity()\SetBodygroup(@@BODYGROUP_EYELASH, @GetData()\GetEyelashType())
 			when 'Gender'
-				@ent\SetBodygroup(@@BODYGROUP_GENDER, @GetData()\GetGender())
+				@GetEntity()\SetBodygroup(@@BODYGROUP_GENDER, @GetData()\GetGender())
 			when 'SocksAsModel'
 				if state\GetValue()
 					@CreateSocksModelIfNotExists()
@@ -409,72 +443,70 @@ class CPPMBodygroupController extends DefaultBodygroupController
 		return unless @isValid
 		switch @GetData()\GetRace()
 			when PPM2.RACE_EARTH
-				@ent\SetBodygroup(@@BODYGROUP_HORN, 1)
-				@ent\SetBodygroup(@@BODYGROUP_WINGS, 1)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_HORN, 1)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_WINGS, 1)
 			when PPM2.RACE_PEGASUS
-				@ent\SetBodygroup(@@BODYGROUP_HORN, 1)
-				@ent\SetBodygroup(@@BODYGROUP_WINGS, 0)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_HORN, 1)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_WINGS, 0)
 			when PPM2.RACE_UNICORN
-				@ent\SetBodygroup(@@BODYGROUP_HORN, 0)
-				@ent\SetBodygroup(@@BODYGROUP_WINGS, 1)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_HORN, 0)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_WINGS, 1)
 			when PPM2.RACE_ALICORN
-				@ent\SetBodygroup(@@BODYGROUP_HORN, 2)
-				@ent\SetBodygroup(@@BODYGROUP_WINGS, 3)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_HORN, 2)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_WINGS, 3)
 
---
--- 0	LrigPelvis
--- 1	Lrig_LEG_BL_Femur
--- 2	Lrig_LEG_BL_Tibia
--- 3	Lrig_LEG_BL_LargeCannon
--- 4	Lrig_LEG_BL_PhalanxPrima
--- 5	Lrig_LEG_BL_RearHoof
--- 6	Lrig_LEG_BR_Femur
--- 7	Lrig_LEG_BR_Tibia
--- 8	Lrig_LEG_BR_LargeCannon
--- 9	Lrig_LEG_BR_PhalanxPrima
--- 10	Lrig_LEG_BR_RearHoof
--- 11	LrigSpine1
--- 12	LrigSpine2
--- 13	LrigRibcage
--- 14	Lrig_LEG_FL_Scapula
--- 15	Lrig_LEG_FL_Humerus
--- 16	Lrig_LEG_FL_Radius
--- 17	Lrig_LEG_FL_Metacarpus
--- 18	Lrig_LEG_FL_PhalangesManus
--- 19	Lrig_LEG_FL_FrontHoof
--- 20	Lrig_LEG_FR_Scapula
--- 21	Lrig_LEG_FR_Humerus
--- 22	Lrig_LEG_FR_Radius
--- 23	Lrig_LEG_FR_Metacarpus
--- 24	Lrig_LEG_FR_PhalangesManus
--- 25	Lrig_LEG_FR_FrontHoof
--- 26	LrigNeck1
--- 27	LrigNeck2
--- 28	LrigNeck3
--- 29	LrigScull
--- 30	Jaw
--- 31	Ear_L
--- 32	Ear_R
--- 33	Mane02
--- 34	Mane03
--- 35	Mane03_tip
--- 36	Mane04
--- 37	Mane05
--- 38	Mane06
--- 39	Mane07
--- 40	Mane01
--- 41	Lrigweaponbone
--- 42	right_hand
--- 43	Tail01
--- 44	Tail02
--- 45	Tail03
--- 46	wing_l
--- 47	wing_r
--- 48	wing_l_bat
--- 49	wing_r_bat
--- 50	wing_open_l
--- 51	wing_open_r
---
+-- 0    LrigPelvis
+-- 1    Lrig_LEG_BL_Femur
+-- 2    Lrig_LEG_BL_Tibia
+-- 3    Lrig_LEG_BL_LargeCannon
+-- 4    Lrig_LEG_BL_PhalanxPrima
+-- 5    Lrig_LEG_BL_RearHoof
+-- 6    Lrig_LEG_BR_Femur
+-- 7    Lrig_LEG_BR_Tibia
+-- 8    Lrig_LEG_BR_LargeCannon
+-- 9    Lrig_LEG_BR_PhalanxPrima
+-- 10   Lrig_LEG_BR_RearHoof
+-- 11   LrigSpine1
+-- 12   LrigSpine2
+-- 13   LrigRibcage
+-- 14   Lrig_LEG_FL_Scapula
+-- 15   Lrig_LEG_FL_Humerus
+-- 16   Lrig_LEG_FL_Radius
+-- 17   Lrig_LEG_FL_Metacarpus
+-- 18   Lrig_LEG_FL_PhalangesManus
+-- 19   Lrig_LEG_FL_FrontHoof
+-- 20   Lrig_LEG_FR_Scapula
+-- 21   Lrig_LEG_FR_Humerus
+-- 22   Lrig_LEG_FR_Radius
+-- 23   Lrig_LEG_FR_Metacarpus
+-- 24   Lrig_LEG_FR_PhalangesManus
+-- 25   Lrig_LEG_FR_FrontHoof
+-- 26   LrigNeck1
+-- 27   LrigNeck2
+-- 28   LrigNeck3
+-- 29   LrigScull
+-- 30   Jaw
+-- 31   Ear_L
+-- 32   Ear_R
+-- 33   Mane02
+-- 34   Mane03
+-- 35   Mane03_tip
+-- 36   Mane04
+-- 37   Mane05
+-- 38   Mane06
+-- 39   Mane07
+-- 40   Mane01
+-- 41   Lrigweaponbone
+-- 42   right_hand
+-- 43   wing_l
+-- 44   wing_r
+-- 45   Tail01
+-- 46   Tail02
+-- 47   Tail03
+-- 48   wing_l_bat
+-- 49   wing_r_bat
+-- 50   wing_open_l
+-- 51   wing_open_r
 
 class NewBodygroupController extends DefaultBodygroupController
 	@MODELS = {'models/ppm/player_default_base_new.mdl', 'models/ppm/player_default_base_new_nj.mdl'}
@@ -484,45 +516,42 @@ class NewBodygroupController extends DefaultBodygroupController
 	@BODYGROUP_HORN = 1
 	@BODYGROUP_WINGS = 2
 
-	@EAR_L = 31
-	@EAR_R = 32
+	@EAR_L = 'Ear_L'
+	@EAR_R = 'Ear_R'
 
-	@BONE_TAIL_1 = 43
-	@BONE_TAIL_2 = 44
-	@BONE_TAIL_3 = 45
+	@WING_LEFT_1 = 'wing_l'
+	@WING_LEFT_2 = 'wing_l_bat'
+	@WING_RIGHT_1 = 'wing_r'
+	@WING_RIGHT_2 = 'wing_r_bat'
 
-	@WING_LEFT_1 = 46
-	@WING_LEFT_2 = 48
-	@WING_RIGHT_1 = 47
-	@WING_RIGHT_2 = 49
+	@WING_OPEN_LEFT = 'wing_open_l'
+	@WING_OPEN_RIGHT = 'wing_open_r'
 
-	@WING_OPEN_LEFT = 50
-	@WING_OPEN_RIGHT = 51
+	@BONE_SPINE = 'LrigSpine1'
 
-	@BONE_SPINE = 11
+	Remap: =>
+		super!
+		mapping = {
+			'EAR_L', 'EAR_R'
+			'WING_LEFT_1', 'WING_LEFT_2', 'WING_RIGHT_1'
+			'WING_RIGHT_2', 'WING_OPEN_LEFT', 'WING_OPEN_RIGHT'
+		}
 
-	@BONE_MANE_1 = 40
-	@BONE_MANE_2 = 33
-	@BONE_MANE_3 = 34
-	@BONE_MANE_4 = 36
-	@BONE_MANE_5 = 37
-	@BONE_MANE_6 = 38
-	@BONE_MANE_7 = 39
-	@BONE_MANE_8 = 35
+		for _, name in ipairs mapping
+			@[name] = @GetEntity()\LookupBone(@@[name])
 
-	__tostring: => "[#{@@__name}:#{@objID}|#{@GetData()}]"
-
-	new: (...) =>
-		super(...)
+			if not @[name]
+				@validSkeleton = false
 
 	CreateUpperManeModel: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		return @maneModelUP if IsValid(@maneModelUP)
-		for ent in *ents_GetAll()
-			if ent.isPonyPropModel and ent.upperMane and ent.manePlayer == @ent
+
+		for _, ent in ipairs ents_GetAll()
+			if ent.isPonyPropModel and ent.upperMane and ent.manePlayer == @GetEntity()
 				@maneModelUP = ent
 				@GetData()\SetUpperManeModel(@maneModelUP)
-				PPM2.DebugPrint('Resuing ', @maneModelUP, ' as upper mane model for ', @ent)
+				PPM2.DebugPrint('Resuing ', @maneModelUP, ' as upper mane model for ', @GetEntity())
 				return ent
 
 		modelID, bodygroupID = PPM2.TransformNewModelID(@GetData()\GetManeTypeNew())
@@ -530,18 +559,18 @@ class NewBodygroupController extends DefaultBodygroupController
 		with @maneModelUP = ClientsideModel("models/ppm/hair/ppm_manesetupper#{modelID}.mdl")
 			.isPonyPropModel = true
 			.upperMane = true
-			.manePlayer = @ent
+			.manePlayer = @GetEntity()
 			\DrawShadow(true) if CLIENT
-			\SetPos(@ent\EyePos())
+			\SetPos(@GetEntity()\EyePos())
 			\Spawn()
 			\Activate()
 			\SetNoDraw(true) if CLIENT
 			\SetBodygroup(1, bodygroupID)
-			\SetParent(@ent\GetEntity())
+			\SetParent(@GetEntity())
 			\Fire('SetParentAttachment', @@ATTACHMENT_EYES_NAME) if SERVER
 			\AddEffects(EF_BONEMERGE)
 
-		PPM2.DebugPrint('Creating new upper mane model for ', @ent, ' as ', @maneModelUP)
+		PPM2.DebugPrint('Creating new upper mane model for ', @GetEntity(), ' as ', @maneModelUP)
 
 		if SERVER
 			timer.Simple .5, ->
@@ -554,13 +583,13 @@ class NewBodygroupController extends DefaultBodygroupController
 		return @maneModelUP
 
 	CreateLowerManeModel: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		return @maneModelLower if IsValid(@maneModelLower)
-		for ent in *ents_GetAll()
-			if ent.isPonyPropModel and ent.lowerMane and ent.manePlayer == @ent
+		for _, ent in ipairs ents_GetAll()
+			if ent.isPonyPropModel and ent.lowerMane and ent.manePlayer == @GetEntity()
 				@maneModelLower = ent
 				@GetData()\SetLowerManeModel(@maneModelLower)
-				PPM2.DebugPrint('Resuing ', @maneModelLower, ' as lower mane model for ', @ent)
+				PPM2.DebugPrint('Resuing ', @maneModelLower, ' as lower mane model for ', @GetEntity())
 				return ent
 
 		modelID, bodygroupID = PPM2.TransformNewModelID(@GetData()\GetManeTypeLowerNew())
@@ -568,28 +597,28 @@ class NewBodygroupController extends DefaultBodygroupController
 		with @maneModelLower = ClientsideModel("models/ppm/hair/ppm_manesetlower#{modelID}.mdl")
 			.isPonyPropModel = true
 			.lowerMane = true
-			.manePlayer = @ent
+			.manePlayer = @GetEntity()
 			\DrawShadow(true)
-			\SetPos(@ent\EyePos())
+			\SetPos(@GetEntity()\EyePos())
 			\Spawn()
 			\Activate()
 			\SetBodygroup(1, bodygroupID)
 			\SetNoDraw(true)
-			\SetParent(@ent\GetEntity())
+			\SetParent(@GetEntity())
 			\AddEffects(EF_BONEMERGE)
 
-		PPM2.DebugPrint('Creating new lower mane model for ', @ent, ' as ', @maneModelLower)
+		PPM2.DebugPrint('Creating new lower mane model for ', @GetEntity(), ' as ', @maneModelLower)
 		@GetData()\SetLowerManeModel(@maneModelLower)
 		return @maneModelLower
 
 	CreateTailModel: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		return @tailModel if IsValid(@tailModel)
-		for ent in *ents_GetAll()
-			if ent.isPonyPropModel and ent.isTail and ent.manePlayer == @ent
+		for _, ent in ipairs ents_GetAll()
+			if ent.isPonyPropModel and ent.isTail and ent.manePlayer == @GetEntity()
 				@tailModel = ent
 				@GetData()\SetTailModel(@tailModel)
-				PPM2.DebugPrint('Resuing ', @tailModel, ' as tail model for ', @ent)
+				PPM2.DebugPrint('Resuing ', @tailModel, ' as tail model for ', @GetEntity())
 				return ent
 
 		modelID, bodygroupID = PPM2.TransformNewModelID(@GetData()\GetTailTypeNew())
@@ -598,34 +627,34 @@ class NewBodygroupController extends DefaultBodygroupController
 		with @tailModel = ClientsideModel("models/ppm/hair/ppm_tailset#{modelID}.mdl")
 			.isPonyPropModel = true
 			.isTail = true
-			.manePlayer = @ent
+			.manePlayer = @GetEntity()
 			\DrawShadow(true)
-			\SetPos(@ent\EyePos())
+			\SetPos(@GetEntity()\EyePos())
 			\Spawn()
 			\Activate()
 			\SetNoDraw(true)
 			\SetBodygroup(1, bodygroupID)
-			\SetParent(@ent\GetEntity())
+			\SetParent(@GetEntity())
 			\AddEffects(EF_BONEMERGE)
 
-		PPM2.DebugPrint('Creating new tail model for ', @ent, ' as ', @tailModel)
+		PPM2.DebugPrint('Creating new tail model for ', @GetEntity(), ' as ', @tailModel)
 		@GetData()\SetTailModel(@tailModel)
 		return @tailModel
 
 	CreateUpperManeModelIfNotExists: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not @GetEntity()\IsPony()
 		@CreateUpperManeModel(force) if not IsValid(@maneModelUP)
 		@GetData()\SetUpperManeModel(@maneModelUP) if IsValid(@maneModelUP)
 		return @maneModelUP
 
 	CreateLowerManeModelIfNotExists: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not @GetEntity()\IsPony()
 		@CreateLowerManeModel(force) if not IsValid(@maneModelLower)
 		@GetData()\SetLowerManeModel(@maneModelLower) if IsValid(@maneModelLower)
 		return @maneModelLower
 
 	CreateTailModelIfNotExists: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not @GetEntity()\IsPony()
 		@CreateTailModel(force) if not IsValid(@tailModel)
 		@GetData()\SetTailModel(@tailModel) if IsValid(@tailModel)
 		return @tailModel
@@ -638,11 +667,11 @@ class NewBodygroupController extends DefaultBodygroupController
 		return unless @isValid
 		super(targetEnt)
 		return unless IsValid(targetEnt)
-		for e in *{@CreateUpperManeModelIfNotExists(true), @CreateLowerManeModelIfNotExists(true), @CreateTailModelIfNotExists(true)}
+		for _, e in ipairs {@CreateUpperManeModelIfNotExists(true), @CreateLowerManeModelIfNotExists(true), @CreateTailModelIfNotExists(true)}
 			e\SetParent(targetEnt) if IsValid(e)
 
 	UpdateUpperMane: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		@CreateUpperManeModelIfNotExists(force)
 		return NULL if not IsValid(@maneModelUP)
 		modelID, bodygroupID = PPM2.TransformNewModelID(@GetData()\GetManeTypeNew())
@@ -651,12 +680,12 @@ class NewBodygroupController extends DefaultBodygroupController
 		with @maneModelUP
 			\SetModel(model) if model ~= \GetModel()
 			\SetBodygroup(1, bodygroupID) if \GetBodygroup(1) ~= bodygroupID
-			\SetParent(@ent\GetEntity()) if \GetParent() ~= @ent and IsValid(@ent)
+			\SetParent(@GetEntity()) if \GetParent() ~= @GetEntity() and IsValid(@GetEntity())
 		@GetData()\SetUpperManeModel(@maneModelUP)
 		return @maneModelUP
 
 	UpdateLowerMane: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		@CreateLowerManeModelIfNotExists(force)
 		return NULL if not IsValid(@maneModelLower)
 		modelID, bodygroupID = PPM2.TransformNewModelID(@GetData()\GetManeTypeLowerNew())
@@ -665,12 +694,12 @@ class NewBodygroupController extends DefaultBodygroupController
 		with @maneModelLower
 			\SetModel(model) if model ~= \GetModel()
 			\SetBodygroup(1, bodygroupID) if \GetBodygroup(1) ~= bodygroupID
-			\SetParent(@ent\GetEntity()) if IsValid(@ent)
+			\SetParent(@GetEntity()) if IsValid(@GetEntity())
 		@GetData()\SetLowerManeModel(@maneModelLower)
 		return @maneModelLower
 
 	UpdateTailModel: (force = false) =>
-		return NULL if SERVER or not @isValid or not IsValid(@ent) or not force and @ent\IsDormant() or not @ent\IsPony()
+		return NULL if SERVER or not @isValid or not IsValid(@GetEntity()) or not force and @GetEntity()\IsDormant() or not @GetEntity()\IsPony()
 		@CreateTailModelIfNotExists(force)
 		return NULL if not IsValid(@tailModel)
 		modelID, bodygroupID = PPM2.TransformNewModelID(@GetData()\GetTailTypeNew())
@@ -679,7 +708,7 @@ class NewBodygroupController extends DefaultBodygroupController
 		with @tailModel
 			\SetModel(model) if model ~= \GetModel()
 			\SetBodygroup(1, bodygroupID) if \GetBodygroup(1) ~= bodygroupID
-			\SetParent(@ent\GetEntity()) if IsValid(@ent)
+			\SetParent(@GetEntity()) if IsValid(@GetEntity())
 		@GetData()\SetTailModel(@tailModel)
 		return @tailModel
 
@@ -695,97 +724,100 @@ class NewBodygroupController extends DefaultBodygroupController
 
 	ResetWings: =>
 		return if SERVER
-		ang, vec1, vec2 = Angle(0, 0, 0), Vector(1, 1, 1), Vector(0, 0, 0)
-		for wing in *{@@WING_LEFT_1, @@WING_LEFT_2, @@WING_RIGHT_1, @@WING_RIGHT_2, @@WING_OPEN_LEFT, @@WING_OPEN_RIGHT}
-			with @ent
+		return if not @validSkeleton
+		ang, vec1, vec2 = Angle(0, 0, 0), LVector(1, 1, 1), LVector(0, 0, 0)
+		for _, wing in ipairs {@WING_LEFT_1, @WING_LEFT_2, @WING_RIGHT_1, @WING_RIGHT_2, @WING_OPEN_LEFT, @WING_OPEN_RIGHT}
+			with @GetEntity()
 				\ManipulateBoneAngles2Safe(wing, ang)
 				\ManipulateBoneScale2Safe(wing, vec1)
 				\ManipulateBonePosition2Safe(wing, vec2)
 
 	UpdateWings: =>
 		return if SERVER
-		left = @GetData()\GetLWingSize() * Vector(1, 1, 1)
+		return if not @validSkeleton
+		return if @GetEntity().Alive and not @GetEntity()\Alive()
+		left = @GetData()\GetLWingSize() * LVector(1, 1, 1)
 		leftX = @GetData()\GetLWingX()
 		leftY = @GetData()\GetLWingY()
 		leftZ = @GetData()\GetLWingZ()
-		right = @GetData()\GetRWingSize() * Vector(1, 1, 1)
+		right = @GetData()\GetRWingSize() * LVector(1, 1, 1)
 		rightX = @GetData()\GetRWingX()
 		rightY = @GetData()\GetRWingY()
 		rightZ = @GetData()\GetRWingZ()
-		leftPos = Vector(leftX, leftY, leftZ)
-		rightPos = Vector(rightX, rightY, rightZ)
+		leftPos = LVector(leftX, leftY, leftZ)
+		rightPos = LVector(rightX, rightY, rightZ)
 
-		with @ent
-			\ManipulateBoneScale2Safe(@@WING_LEFT_1, left)
-			\ManipulateBoneScale2Safe(@@WING_LEFT_2, left)
-			\ManipulateBoneScale2Safe(@@WING_OPEN_LEFT, left)
-			\ManipulateBoneScale2Safe(@@WING_RIGHT_1, right)
-			\ManipulateBoneScale2Safe(@@WING_RIGHT_2, right)
-			\ManipulateBoneScale2Safe(@@WING_OPEN_RIGHT, right)
+		with @GetEntity()
+			\ManipulateBoneScale2Safe(@WING_LEFT_1, left)
+			\ManipulateBoneScale2Safe(@WING_LEFT_2, left)
+			\ManipulateBoneScale2Safe(@WING_OPEN_LEFT, left)
+			\ManipulateBoneScale2Safe(@WING_RIGHT_1, right)
+			\ManipulateBoneScale2Safe(@WING_RIGHT_2, right)
+			\ManipulateBoneScale2Safe(@WING_OPEN_RIGHT, right)
 
-			\ManipulateBonePosition2Safe(@@WING_LEFT_1, leftPos)
-			\ManipulateBonePosition2Safe(@@WING_LEFT_2, leftPos)
-			\ManipulateBonePosition2Safe(@@WING_OPEN_LEFT, leftPos)
-			\ManipulateBonePosition2Safe(@@WING_RIGHT_1, rightPos)
-			\ManipulateBonePosition2Safe(@@WING_RIGHT_2, rightPos)
-			\ManipulateBonePosition2Safe(@@WING_OPEN_RIGHT, rightPos)
+			\ManipulateBonePosition2Safe(@WING_LEFT_1, leftPos)
+			\ManipulateBonePosition2Safe(@WING_LEFT_2, leftPos)
+			\ManipulateBonePosition2Safe(@WING_OPEN_LEFT, leftPos)
+			\ManipulateBonePosition2Safe(@WING_RIGHT_1, rightPos)
+			\ManipulateBonePosition2Safe(@WING_RIGHT_2, rightPos)
+			\ManipulateBonePosition2Safe(@WING_OPEN_RIGHT, rightPos)
 
 	UpdateEars: =>
-		vec = Vector(1, 1, 1) * @GrabData('EarsSize')
-		@ent\ManipulateBoneScale2Safe(@@EAR_L, vec)
-		@ent\ManipulateBoneScale2Safe(@@EAR_R, vec)
+		vec = LVector(1, 1, 1) * @GrabData('EarsSize')
+		@GetEntity()\ManipulateBoneScale2Safe(@EAR_L, vec)
+		@GetEntity()\ManipulateBoneScale2Safe(@EAR_R, vec)
 
 	ResetEars: =>
-		ang, vec1, vec2 = Angle(0, 0, 0), Vector(1, 1, 1), Vector(0, 0, 0)
-		for part in *{@@EAR_L, @@EAR_R}
-			with @ent
+		ang, vec1, vec2 = Angle(0, 0, 0), LVector(1, 1, 1), LVector(0, 0, 0)
+		for _, part in ipairs {@EAR_L, @EAR_R}
+			with @GetEntity()
 				\ManipulateBoneAngles2Safe(part, ang)
 				\ManipulateBoneScale2Safe(part, vec1)
 				\ManipulateBonePosition2Safe(part, vec2)
 
 	ResetBodygroups: =>
 		return unless @isValid
-		return unless IsValid(@ent)
-		@ent\SetFlexWeight(@@FLEX_ID_EYELASHES, 0)
-		@ent\SetFlexWeight(@@FLEX_ID_MALE, 0)
-		@ent\SetFlexWeight(@@FLEX_ID_MALE_2, 0)
-		@ent\SetFlexWeight(@@FLEX_ID_MALE_BODY, 0)
-		@ent\SetFlexWeight(@@FLEX_ID_BAT_PONY_EARS, 0)
-		@ent\SetFlexWeight(@@FLEX_ID_FANGS, 0)
-		@ent\SetFlexWeight(@@FLEX_ID_CLAW_TEETH, 0)
+		return unless IsValid(@GetEntity())
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_EYELASHES, 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE, 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_2, 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_BODY, 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_BAT_PONY_EARS, 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS, 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_CLAW_TEETH, 0)
 		@ResetWings()
 		@ResetEars()
 		super()
 
 	SlowUpdate: (createModels = CLIENT, force = false) =>
-		return if not IsValid(@ent)
-		return if not @ent\IsPony()
-		@ent\SetFlexWeight(@@FLEX_ID_EYELASHES,     @GetData()\GetEyelashType() == PPM2.EYELASHES_NONE and 1 or 0)
+		return if not IsValid(@GetEntity())
+		return if not @GetEntity()\IsPony()
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_EYELASHES,     @GetData()\GetEyelashType() == PPM2.EYELASHES_NONE and 1 or 0)
 		maleModifier = @GetData()\GetGender() == PPM2.GENDER_MALE and 1 or 0
 
 		if @GetData()\GetNewMuzzle()
-			@ent\SetFlexWeight(@@FLEX_ID_MALE_2, maleModifier)
-			@ent\SetFlexWeight(@@FLEX_ID_MALE, 0)
+			@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_2, maleModifier)
+			@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE, 0)
 		else
-			@ent\SetFlexWeight(@@FLEX_ID_MALE_2, 0)
-			@ent\SetFlexWeight(@@FLEX_ID_MALE, maleModifier)
+			@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_2, 0)
+			@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE, maleModifier)
 
-		@ent\SetFlexWeight(@@FLEX_ID_MALE_BODY,     maleModifier * @GetData()\GetMaleBuff())
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_BODY,     maleModifier * @GetData()\GetMaleBuff())
 
-		@ent\SetFlexWeight(@@FLEX_ID_BAT_PONY_EARS, @GrabData('BatPonyEars') and @GrabData('BatPonyEarsStrength') or 0)
-		@ent\SetFlexWeight(@@FLEX_ID_CLAW_TEETH,    @GrabData('ClawTeeth') and @GrabData('ClawTeethStrength') or 0)
-		@ent\SetFlexWeight(@@FLEX_ID_HOOF_FLUFF,    @GrabData('HoofFluffers') and @GrabData('HoofFluffersStrength') or 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_BAT_PONY_EARS, @GrabData('BatPonyEars') and @GrabData('BatPonyEarsStrength') or 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_CLAW_TEETH,    @GrabData('ClawTeeth') and @GrabData('ClawTeethStrength') or 0)
+		@GetEntity()\SetFlexWeight(@@FLEX_ID_HOOF_FLUFF,    @GrabData('HoofFluffers') and @GrabData('HoofFluffersStrength') or 0)
 
 		if @GrabData('Fangs')
 			if @GrabData('AlternativeFangs')
-				@ent\SetFlexWeight(@@FLEX_ID_FANGS, 0)
-				@ent\SetFlexWeight(@@FLEX_ID_FANGS2, @GrabData('FangsStrength'))
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS, 0)
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS2, @GrabData('FangsStrength'))
 			else
-				@ent\SetFlexWeight(@@FLEX_ID_FANGS, @GrabData('FangsStrength'))
-				@ent\SetFlexWeight(@@FLEX_ID_FANGS2, 0)
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS, @GrabData('FangsStrength'))
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS2, 0)
 		else
-			@ent\SetFlexWeight(@@FLEX_ID_FANGS, 0)
-			@ent\SetFlexWeight(@@FLEX_ID_FANGS2, 0)
+			@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS, 0)
+			@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS2, 0)
 
 		@ApplyRace()
 		if createModels
@@ -794,6 +826,7 @@ class NewBodygroupController extends DefaultBodygroupController
 			@UpdateTailModel(force)
 			@CreateSocksModelIfNotExists(force) if createModels and @GetData()\GetSocksAsModel()
 			@CreateNewSocksModelIfNotExists(force) if createModels and @GetData()\GetSocksAsNewModel()
+
 	RemoveModels: =>
 		@maneModelUP\Remove() if IsValid(@maneModelUP)
 		@maneModelLower\Remove() if IsValid(@maneModelLower)
@@ -801,81 +834,82 @@ class NewBodygroupController extends DefaultBodygroupController
 		super()
 	ApplyBodygroups: (createModels = CLIENT, force = false) =>
 		return unless @isValid
-		return if not IsValid(@ent)
+		return if not IsValid(@GetEntity())
 		@ResetBodygroups()
-		return @RemoveModels() if not @ent\IsPony()
+		return @RemoveModels() if not @GetEntity()\IsPony()
 		@SlowUpdate(createModels, force)
 
 	@NOCLIP_ANIMATIONS = {9, 10, 11}
 
 	SelectWingsType: =>
 		wtype = @GetData()\GetWingsType()
-		if (@GetData()\GetFly() or @ent.GetMoveType and @ent\GetMoveType() == MOVETYPE_NOCLIP) and (not @ent.InVehicle or not @ent\InVehicle())
+		if (@GetData()\GetFly() or @GetEntity().GetMoveType and @GetEntity()\GetMoveType() == MOVETYPE_NOCLIP) and (not @GetEntity().InVehicle or not @GetEntity()\InVehicle())
 			wtype += PPM2.MAX_WINGS + 1
 		return wtype
 
 	ApplyRace: =>
 		return unless @isValid
-		return if not IsValid(@ent)
+		return if not IsValid(@GetEntity())
 		switch @GetData()\GetRace()
 			when PPM2.RACE_EARTH
-				@ent\SetBodygroup(@@BODYGROUP_HORN, 1)
-				@ent\SetBodygroup(@@BODYGROUP_WINGS, PPM2.MAX_WINGS * 2 + 2)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_HORN, 1)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_WINGS, PPM2.MAX_WINGS * 2 + 2)
 			when PPM2.RACE_PEGASUS
-				@ent\SetBodygroup(@@BODYGROUP_HORN, 1)
-				@ent\SetBodygroup(@@BODYGROUP_WINGS, @SelectWingsType())
+				@GetEntity()\SetBodygroup(@@BODYGROUP_HORN, 1)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_WINGS, @SelectWingsType())
 			when PPM2.RACE_UNICORN
-				@ent\SetBodygroup(@@BODYGROUP_HORN, 0)
-				@ent\SetBodygroup(@@BODYGROUP_WINGS, PPM2.MAX_WINGS * 2 + 2)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_HORN, 0)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_WINGS, PPM2.MAX_WINGS * 2 + 2)
 			when PPM2.RACE_ALICORN
-				@ent\SetBodygroup(@@BODYGROUP_HORN, 0)
-				@ent\SetBodygroup(@@BODYGROUP_WINGS, @SelectWingsType())
+				@GetEntity()\SetBodygroup(@@BODYGROUP_HORN, 0)
+				@GetEntity()\SetBodygroup(@@BODYGROUP_WINGS, @SelectWingsType())
 
 	DataChanges: (state) =>
 		return unless @isValid
-		return if not IsValid(@ent)
+		return if not IsValid(@GetEntity())
+		@Remap()
 		switch state\GetKey()
 			when 'EyelashType'
-				@ent\SetFlexWeight(@@FLEX_ID_EYELASHES, @GetData()\GetEyelashType() == PPM2.EYELASHES_NONE and 1 or 0)
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_EYELASHES, @GetData()\GetEyelashType() == PPM2.EYELASHES_NONE and 1 or 0)
 			when 'Gender'
 				maleModifier = @GetData()\GetGender() == PPM2.GENDER_MALE and 1 or 0
 				if @GetData()\GetNewMuzzle()
-					@ent\SetFlexWeight(@@FLEX_ID_MALE_2, maleModifier)
-					@ent\SetFlexWeight(@@FLEX_ID_MALE, 0)
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_2, maleModifier)
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE, 0)
 				else
-					@ent\SetFlexWeight(@@FLEX_ID_MALE_2, 0)
-					@ent\SetFlexWeight(@@FLEX_ID_MALE, maleModifier)
-				@ent\SetFlexWeight(@@FLEX_ID_MALE_BODY, maleModifier * @GetData()\GetMaleBuff())
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_2, 0)
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE, maleModifier)
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_BODY, maleModifier * @GetData()\GetMaleBuff())
 			when 'Fly'
 				@ApplyRace()
 			when 'NewMuzzle'
 				maleModifier = @GetData()\GetGender() == PPM2.GENDER_MALE and 1 or 0
 				if @GetData()\GetNewMuzzle()
-					@ent\SetFlexWeight(@@FLEX_ID_MALE_2, maleModifier)
-					@ent\SetFlexWeight(@@FLEX_ID_MALE, 0)
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_2, maleModifier)
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE, 0)
 				else
-					@ent\SetFlexWeight(@@FLEX_ID_MALE_2, 0)
-					@ent\SetFlexWeight(@@FLEX_ID_MALE, maleModifier)
-				@ent\SetFlexWeight(@@FLEX_ID_MALE_BODY, maleModifier * @GetData()\GetMaleBuff())
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_2, 0)
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE, maleModifier)
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_BODY, maleModifier * @GetData()\GetMaleBuff())
 			when 'BatPonyEars', 'BatPonyEarsStrength'
-				@ent\SetFlexWeight(@@FLEX_ID_BAT_PONY_EARS, @GrabData('BatPonyEars') and @GrabData('BatPonyEarsStrength') or 0)
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_BAT_PONY_EARS, @GrabData('BatPonyEars') and @GrabData('BatPonyEarsStrength') or 0)
 			when 'Fangs', 'AlternativeFangs', 'FangsStrength'
 				if @GrabData('Fangs')
 					if @GrabData('AlternativeFangs')
-						@ent\SetFlexWeight(@@FLEX_ID_FANGS, 0)
-						@ent\SetFlexWeight(@@FLEX_ID_FANGS2, @GrabData('FangsStrength'))
+						@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS, 0)
+						@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS2, @GrabData('FangsStrength'))
 					else
-						@ent\SetFlexWeight(@@FLEX_ID_FANGS, @GrabData('FangsStrength'))
-						@ent\SetFlexWeight(@@FLEX_ID_FANGS2, 0)
+						@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS, @GrabData('FangsStrength'))
+						@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS2, 0)
 				else
-					@ent\SetFlexWeight(@@FLEX_ID_FANGS, 0)
-					@ent\SetFlexWeight(@@FLEX_ID_FANGS2, 0)
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS, 0)
+					@GetEntity()\SetFlexWeight(@@FLEX_ID_FANGS2, 0)
 			when 'EarFluffers', 'EarFluffersStrength'
 				@UpdateEars()
 			when 'HoofFluffers', 'HoofFluffersStrength'
-				@ent\SetFlexWeight(@@FLEX_ID_HOOF_FLUFF, @GrabData('HoofFluffers') and @GrabData('HoofFluffersStrength') or 0)
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_HOOF_FLUFF, @GrabData('HoofFluffers') and @GrabData('HoofFluffersStrength') or 0)
 			when 'ClawTeeth', 'ClawTeethStrength'
-				@ent\SetFlexWeight(@@FLEX_ID_CLAW_TEETH, @GrabData('ClawTeeth') and @GrabData('ClawTeethStrength') or 0)
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_CLAW_TEETH, @GrabData('ClawTeeth') and @GrabData('ClawTeethStrength') or 0)
 			when 'ManeTypeNew'
 				@UpdateUpperMane() if CLIENT
 			when 'ManeTypeLowerNew'
@@ -893,7 +927,7 @@ class NewBodygroupController extends DefaultBodygroupController
 				@UpdateWings()
 			when 'MaleBuff'
 				maleModifier = @GetData()\GetGender() == PPM2.GENDER_MALE and 1 or 0
-				@ent\SetFlexWeight(@@FLEX_ID_MALE_BODY, maleModifier * @GetData()\GetMaleBuff())
+				@GetEntity()\SetFlexWeight(@@FLEX_ID_MALE_BODY, maleModifier * @GetData()\GetMaleBuff())
 			when 'SocksAsModel'
 				return if SERVER
 				if state\GetValue()
@@ -918,7 +952,7 @@ if CLIENT
 			bodygroup.lastPAC3BoneReset = RealTimeL() + 1
 
 	ppm2_sv_allow_resize = ->
-		for ply in *player.GetAll()
+		for _, ply in ipairs player.GetAll()
 			if data = ply\GetPonyData()
 				if bodygroup = data\GetBodygroupController()
 					bodygroup\ResetTail()
