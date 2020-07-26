@@ -1,5 +1,5 @@
 
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -160,6 +160,7 @@ gui.ppm2.editor.tabs.legs = 'Legs'
 gui.ppm2.editor.tabs.socks = 'Socks'
 gui.ppm2.editor.tabs.newsocks = 'New Socks'
 gui.ppm2.editor.tabs.about = 'About'
+gui.ppm2.editor.tabs.clothes = 'Clothes'
 
 gui.ppm2.editor.old_tabs.mane_tail = 'Mane and tail'
 gui.ppm2.editor.old_tabs.wings_and_horn_details = 'Wings and horn details'
@@ -232,6 +233,26 @@ for i = 1, 6
 gui.ppm2.editor.ears.bat = 'Bat pony ears'
 gui.ppm2.editor.ears.size = 'Ears size'
 
+gui.ppm2.editor.clothes.head = 'Head clothes'
+gui.ppm2.editor.clothes.eye = 'Eye(s) clothes'
+gui.ppm2.editor.clothes.neck = 'Neck clothes'
+gui.ppm2.editor.clothes.body = 'Body clothes'
+gui.ppm2.editor.clothes_col.help = 'Some of color pickers may not for some clothes'
+gui.ppm2.editor.clothes_col.head_use = 'Custom head clothes color'
+gui.ppm2.editor.clothes_col.eye_use = 'Custom eye(s) clothes color'
+gui.ppm2.editor.clothes_col.neck_use = 'Custom neck clothes color'
+gui.ppm2.editor.clothes_col.body_use = 'Custom body clothes color'
+
+for {internal, publicName} in *{{'head', 'Head'}, {'neck', 'Neck'}, {'body', 'Body'}, {'eye', 'Eye'}}
+	for i = 1, PPM2.MAX_CLOTHES_COLORS
+		gui.ppm2.editor.clothes[internal .. '_url' .. i] = string.format('%s clothes URL material %d', publicName, i)
+
+for i = 1, PPM2.MAX_CLOTHES_COLORS
+	gui.ppm2.editor.clothes_col["head_#{i}"] = 'Head clothes color №' .. i
+	gui.ppm2.editor.clothes_col["eye_#{i}"] = 'Eye(s) clothes color №' .. i
+	gui.ppm2.editor.clothes_col["neck_#{i}"] = 'Neck clothes color №' .. i
+	gui.ppm2.editor.clothes_col["body_#{i}"] = 'Body clothes color №' .. i
+
 gui.ppm2.editor.horn.detail_color = 'Horn detail color'
 gui.ppm2.editor.horn.glowing_detail = 'Glowing Horn Detail'
 gui.ppm2.editor.horn.glow_strength = 'Horn Glow Strength'
@@ -242,6 +263,8 @@ gui.ppm2.editor.horn.magic = 'Horn magic color'
 gui.ppm2.editor.horn.separate_magic_color = 'Separate magic color from eye color'
 gui.ppm2.editor.horn.separate = 'Separate horn color from body'
 gui.ppm2.editor.horn.separate_phong = 'Separate horn phong settings from body'
+gui.ppm2.editor.horn.use_new = 'Use new horn'
+gui.ppm2.editor.horn.new_type = 'New horn type'
 
 for i = 1, 3
 	gui.ppm2.editor.horn.detail['desc' .. i] = "Horn URL detail #{i}"
@@ -285,6 +308,14 @@ gui.ppm2.editor.body.color = 'Body color'
 gui.ppm2.editor.body.body_phong = 'Body phong parameters'
 gui.ppm2.editor.body.spine_length = 'Spine length'
 gui.ppm2.editor.body.url_desc = 'Body detail URL image input fields\nShould be PNG or JPEG (works same as\nPAC3 URL texture)'
+
+gui.ppm2.editor.body.disable_hoofsteps = 'Disable hoofsteps'
+gui.ppm2.editor.body.disable_wander_sounds = 'Disable wander sounds'
+gui.ppm2.editor.body.disable_new_step_sounds = 'Disable custom step sounds'
+gui.ppm2.editor.body.disable_jump_sound = 'Disable jump sound'
+gui.ppm2.editor.body.disable_falldown_sound = 'Disable falldown sound'
+gui.ppm2.editor.body.call_playerfootstep = 'Call PlayerFootstep on each sound'
+gui.ppm2.editor.body.call_playerfootstep_desc = 'Call PlayerFootstep hook on each actual sound you hear.\nUsing this option will allow other addons installed to rely on PPM2\'s immersion\nwhich listen PlayerFootstep hook. This should be disabled only when you get unreliable result from other addons\nor your FPS drop to low values since one of addons installed is badly coded.'
 
 for i = 1, PPM2.MAX_BODY_DETAILS
 	gui.ppm2.editor.body.detail['desc' .. i] = "Detail #{i}"
@@ -451,6 +482,18 @@ gui.ppm2.spawnmenu.reflections = 'Enable real time eyes reflections'
 gui.ppm2.spawnmenu.reflections_drawdist = 'Reflections draw distance'
 gui.ppm2.spawnmenu.reflections_renderdist = 'Reflections render distance'
 gui.ppm2.spawnmenu.doublejump = 'Double jump activate flight'
+gui.ppm2.spawnmenu.vm_magic = 'ViewModel unicorn alignment'
 
 tip.ppm2.in_editor = 'In PPM/2 Editor'
 tip.ppm2.camera = "%s's PPM/2 Camera"
+
+message.ppm2.queue_notify = '%i textures are queued to be rendered'
+
+gui.ppm2.editor.body.bump = 'Bumpmap strength'
+gui.ppm2.editor.body.detail.first = 'Render detail first-wise'
+
+gui.ppm2.editor.size.pony = 'Collision height of pony: %s'
+gui.ppm2.editor.size.pony2 = 'Visual height of pony: ~%s'
+gui.ppm2.editor.size.pony_width = 'Collision width of pony: %s'
+gui.ppm2.editor.size.back = 'Length of spine: ~%s'
+gui.ppm2.editor.size.neck = 'Length of neck: ~%s'

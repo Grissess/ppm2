@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -128,6 +128,7 @@ PPM2.CreateEmotesPanel = (parent, target = LocalPlayer(), sendToServer = true) -
 	self\SetSkin('DLib_Black')
 	@SetSize(200, 300)
 	@Paint = (w = 0, h = 0) =>
+		DLib.blur.DrawPanel(w, h, @LocalToScreen(0, 0)) if DLib.skin.ENABLE_BLUR\GetBool()
 		surface.SetDrawColor(0, 0, 0, 150)
 		surface.DrawRect(0, 0, w, h)
 	@scroll = vgui.Create('DScrollPanel', @)

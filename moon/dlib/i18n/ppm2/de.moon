@@ -1,5 +1,5 @@
 
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,9 @@
 
 
 -- editor stuffs
+
+gui.ppm2.dxlevel.not_supported = 'Dein DirectX™ Level ist zu niedrig. Mindestens ist 9.0 erforderlich. Wenn Du 8.1 für die Bildrate verwendest,\nDann hast Du entweder eine alte Grafikkarte oder schlechte Treiber.\nDenn die Bildrate in gmod kann nur niedrig sein, weil andere Addons nutzlos hohe CPU-Last erzeugen.\nJa! Diese Meldung wird mehrmals erscheinen, um Dich zu ärgern. Denn, WARUM HAST DU DICH DAN ÜBER FEHLENDE TEXTUREN GEMELDET????'
+gui.ppm2.dxlevel.toolow = 'DirectX™ level ist zu niedrig für PPM/2'
 
 gui.ppm2.editor.eyes.separate = 'Getrennte Einstellungen für Augen verwenden'
 gui.ppm2.editor.eyes.url = 'Augen URL Textur'
@@ -217,6 +220,9 @@ for i = 1, 6
 	gui.ppm2.editor.url_mane['desc' .. i] = "Mähne URL Detail #{i} Eingabefeld"
 	gui.ppm2.editor.url_mane['color' .. i] = "Mähne URL Detail Farbe #{i}"
 
+	gui.ppm2.editor.url_tail['desc' .. i] = "Schweif URL Detail #{i} Eingabefeld"
+	gui.ppm2.editor.url_tail['color' .. i] = "Schweif URL detail Farbe #{i}"
+
 	gui.ppm2.editor.url_mane.sep.up['desc' .. i] = "Obere Mähne URL Detail #{i} Eingabefeld"
 	gui.ppm2.editor.url_mane.sep.up['color' .. i] = "Obere Mähne URL Detail Farbe #{i}"
 
@@ -279,6 +285,14 @@ gui.ppm2.editor.body.color = 'Körperfarbe'
 gui.ppm2.editor.body.body_phong = 'Körper Phong Parameter'
 gui.ppm2.editor.body.spine_length = 'Rückenlänge'
 gui.ppm2.editor.body.url_desc = 'Körper Detail URL Bild Eingabefeld\nSollte PNG oder JPEG sein (funktioniert wie bei\nPAC3 URL textur)'
+
+gui.ppm2.editor.body.disable_hoofsteps = 'Hufschritte Deaktivieren'
+gui.ppm2.editor.body.disable_wander_sounds = 'Wandergeräusche Deaktivieren'
+gui.ppm2.editor.body.disable_new_step_sounds = 'Neue Laufgeräusche Deaktivieren'
+gui.ppm2.editor.body.disable_jump_sound = 'Sprung geräusche Deaktivieren'
+gui.ppm2.editor.body.disable_falldown_sound = 'Sprung geräusche Deaktivieren'
+gui.ppm2.editor.body.call_playerfootstep = 'PlayerFootstep bei jedem Sound aufrufen'
+gui.ppm2.editor.body.call_playerfootstep_desc = 'Ruft den PlayerFootstep hook bei jedem tatsächlichen Sound auf, den Du hörst.\nDurch die Verwendung dieser Option können sich andere installierte Addons auf die Immersion von PPM2 verlassen,\ndie den PlayerFootstep hook hören. Dies sollte nur deaktiviert werden, wenn es zu unzuverlässige Ergebnisse von anderen Addons kommt\noder Deine FPS auf niedrige Werte fallen, da eines der installierten Addons schlecht Programmiert wurde.'
 
 for i = 1, PPM2.MAX_BODY_DETAILS
 	gui.ppm2.editor.body.detail['desc' .. i] = "Detail #{i}"
@@ -425,3 +439,31 @@ gui.ppm2.editor.intro.text = "Grüße meinen neuen.... Robochirurgen für Ponys!
 	"Keine Rückerstattung."
 gui.ppm2.editor.intro.title = 'Willkommen hier, Mensch!'
 gui.ppm2.editor.intro.okay = "Ok, ich werde diese Lizenz sowieso nie lesen."
+
+message.ppm2.debug.race_condition = 'Empfange NetworkedPonyData bevor das Entity auf dem Client erstellt wurde! Warten...'
+
+gui.ppm2.spawnmenu.newmodel = 'Spawn neues Modell'
+gui.ppm2.spawnmenu.newmodelnj = 'Spawn neues nj Modell'
+gui.ppm2.spawnmenu.oldmodel = 'Spawn altes Modell'
+gui.ppm2.spawnmenu.oldmodelnj = 'Spawn altes nj Modell'
+gui.ppm2.spawnmenu.cppmmodel = 'Spawn CPPM Modell'
+gui.ppm2.spawnmenu.cppmmodelnj = 'Spawn CPPM nj Modell'
+gui.ppm2.spawnmenu.cleanup = 'Bereinige unbenutzte Modelle'
+gui.ppm2.spawnmenu.reload = 'Lokale Daten neu laden'
+gui.ppm2.spawnmenu.require = 'Daten vom Server anfordern'
+gui.ppm2.spawnmenu.drawhooves = 'Stelle Hufe als Hände dar'
+gui.ppm2.spawnmenu.nohoofsounds = 'Keine Hufgeräusche'
+gui.ppm2.spawnmenu.noflexes = 'Deaktiviere Gesichtsausdrücke (emotes)'
+gui.ppm2.spawnmenu.advancedmode = 'PPM2-Editor Erweiterter Modus aktivieren'
+gui.ppm2.spawnmenu.reflections = 'Echtzeit Augenreflexionen aktivieren'
+gui.ppm2.spawnmenu.reflections_drawdist = 'Reflexions sichtweite'
+gui.ppm2.spawnmenu.reflections_renderdist = 'Reflexions render sichtweite'
+gui.ppm2.spawnmenu.doublejump = 'Doppelsprung aktiviert Flug'
+gui.ppm2.spawnmenu.vm_magic = 'ViewModel Einhorn ausrichtung'
+
+tip.ppm2.in_editor = 'In PPM/2 Editor'
+tip.ppm2.camera = "%s's PPM/2 Kamera"
+
+message.ppm2.queue_notify = '%i Texturen werden in die Warteschlange gestellt, um gerendert zu werden.'
+
+gui.ppm2.editor.body.bump = 'Bumpmap stärke'

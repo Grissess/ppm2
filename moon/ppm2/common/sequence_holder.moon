@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -131,5 +131,6 @@ class PPM2.SequenceHolder extends PPM2.ModifierBase
 		return delta
 
 	Remove: =>
+		seq\Stop() for _, seq in ipairs @currentSequencesIterable
 		@isValid = false
 		@RemoveHooks()

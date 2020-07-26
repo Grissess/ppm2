@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -325,6 +325,7 @@ else
 					else
 						PPM2.ChatPrint('You need to be a Pegasus or an Alicorn to fly!')
 				return
+
 			if not FORCE_ALLOW_FLIGHT\GetBool() and not SUPPRESS_CLIENTSIDE_CHECK\GetBool()
 				can = hook.Run('PlayerNoClip', @, not data\GetFly()) or hook.Run('PPM2Fly', @, not data\GetFly())
 				if not can
@@ -332,6 +333,7 @@ else
 						lastMessage2 = RealTimeL() + 1
 						PPM2.LChatPrint('info.ppm2.fly.cannot', data\GetFly() and 'land' or 'fly')
 					return
+
 			RunConsoleCommand('ppm2_fly')
 			lastDouble = 0
 			return

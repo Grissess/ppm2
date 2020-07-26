@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -72,7 +72,7 @@ class PonyWeightController extends PPM2.ControllerChildren
 	@HARD_LIMIT_MINIMAL = 0.1
 	@HARD_LIMIT_MAXIMAL = 3
 
-	@DEFAULT_BONE_SIZE = LVector(1, 1, 1)
+	@DEFAULT_BONE_SIZE = Vector(1, 1, 1)
 	@NEXT_OBJ_ID = 0
 
 	Remap: =>
@@ -162,8 +162,8 @@ class PonyWeightController extends PPM2.ControllerChildren
 	ResetBones: (ent = @GetEntity()) =>
 		return if not IsValid(ent) or not @isValid
 		return if not @validSkeleton
-		for _, {:id} in ipairs @WEIGHT_BONES
-			ent\ManipulateBoneScale2Safe(id, @@DEFAULT_BONE_SIZE)
+		for {:id} in *@WEIGHT_BONES
+			ent\ManipulateBoneScale(id, @@DEFAULT_BONE_SIZE)
 
 	Reset: => @ResetBones()
 
@@ -173,9 +173,9 @@ class PonyWeightController extends PPM2.ControllerChildren
 		return if @GetEntity().Alive and not @GetEntity()\Alive()
 		return if not @validSkeleton
 
-		for _, {:id, :scale} in ipairs @WEIGHT_BONES
+		for {:id, :scale} in *@WEIGHT_BONES
 			delta = 1 + (@weight * @scale - 1) * scale
-			ent\ManipulateBoneScale2Safe(id, LVector(delta, delta, delta))
+			ent\ManipulateBoneScale(id, Vector(delta, delta, delta)) if delta < 0.99 or delta > 1.01
 
 	Remove: =>
 		@isValid = false

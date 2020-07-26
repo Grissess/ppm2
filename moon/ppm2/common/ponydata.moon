@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -70,8 +70,18 @@ class PPM2.NetworkChangeState
 	Revert: => @obj[@key] = @oldValue if not @cantApply
 	Apply: => @obj[@key] = @newValue if not @cantApply
 
-for _, ent in ipairs ents.GetAll()
-	ent.__PPM2_PonyData\Remove() if ent.__PPM2_PonyData
+do
+	nullify = ->
+		ProtectedCall ->
+			for _, ent in ipairs ents.GetAll()
+				ent.__PPM2_PonyData\Remove() if ent.__PPM2_PonyData
+
+		for _, ent in ipairs ents.GetAll()
+			ent.__PPM2_PonyData = nil
+
+	nullify()
+	timer.Simple 0, -> timer.Simple 0, -> timer.Simple 0, nullify
+	hook.Add 'InitPostEntity', 'PPM2.FixSingleplayer', nullify
 
 wUInt = (def = 0, size = 8) ->
 	return (arg = def) -> net.WriteUInt(arg, size)
@@ -270,6 +280,7 @@ class NetworkedPonyData extends PPM2.ModifierBase
 		return output
 
 	@RenderTasks = {}
+	@CheckTasks = {}
 
 	@NW_Vars = {}
 	@NW_VarsTable = {}
@@ -336,6 +347,8 @@ class NetworkedPonyData extends PPM2.ModifierBase
 	@GetSet('LowerManeModel', 'm_lowerManeModel')
 	@GetSet('TailModel', 'm_tailModel')
 	@GetSet('SocksModel', 'm_socksModel')
+	@GetSet('HornModel', 'm_hornmodel')
+	@GetSet('ClothesModel', 'm_clothesmodel')
 	@GetSet('NewSocksModel', 'm_newSocksModel')
 
 	@NetworkVar('Fly',                  rBool,   wBool,                 false)
@@ -405,7 +418,7 @@ class NetworkedPonyData extends PPM2.ModifierBase
 
 			if not IsValid(ent)
 				@isNWWaiting = true
-				@waitTTL = RealTimeL() + 60
+				@waitTTL = RealTimeL() + 3600
 				table.insert(@@NW_WAIT, @)
 				PPM2.LMessage('message.ppm2.debug.race_condition')
 				--print('WAITING ON ', entid)
@@ -447,6 +460,7 @@ class NetworkedPonyData extends PPM2.ModifierBase
 		timer.Simple(0, -> @GetRenderController()\CompileTextures() if @GetRenderController()) if CLIENT
 		PPM2.DebugPrint('Ponydata ', @, ' was updated to use for ', @ent)
 		@@RenderTasks = [task for i, task in pairs @@NW_Objects when task\IsValid() and IsValid(task.ent) and not task.ent\IsPlayer() and not task\GetDisableTask()]
+		@@CheckTasks = [task for i, task in pairs @@NW_Objects when task\IsValid() and IsValid(task.ent) and not task\GetDisableTask()]
 
 	ModelChanges: (old = @ent\GetModel(), new = old) =>
 		@modelCached = new
@@ -463,6 +477,7 @@ class NetworkedPonyData extends PPM2.ModifierBase
 
 		if state\GetKey() == 'DisableTask'
 			@@RenderTasks = [task for i, task in pairs @@NW_Objects when task\IsValid() and IsValid(task.ent) and not task.ent\IsPlayer() and not task\GetDisableTask()]
+			@@CheckTasks = [task for i, task in pairs @@NW_Objects when task\IsValid() and IsValid(task.ent) and not task\GetDisableTask()]
 
 		@GetSizeController()\DataChanges(state) if @ent and @GetBodygroupController()
 		@GetBodygroupController()\DataChanges(state) if @ent and @GetBodygroupController()
@@ -487,6 +502,13 @@ class NetworkedPonyData extends PPM2.ModifierBase
 			@GetWeightController()\Reset() if @GetWeightController() and @GetWeightController().Reset
 			@GetRenderController()\Reset() if @GetRenderController() and @GetRenderController().Reset
 			@GetBodygroupController()\Reset() if @GetBodygroupController() and @GetBodygroupController().Reset
+
+	GetHoofstepVolume: =>
+		return 0.8 if @ShouldMuffleHoosteps()
+		return 1
+
+	ShouldMuffleHoosteps: =>
+		return @GetSocksAsModel() or @GetSocksAsNewModel()
 
 	PlayerRespawn: =>
 		return if not IsValid(@ent)
@@ -544,6 +566,7 @@ class NetworkedPonyData extends PPM2.ModifierBase
 		return if @deathRagdollMerged
 		bgController = @GetBodygroupController()
 		rag = @ent\GetRagdollEntity()
+
 		if not bgController.MergeModels
 			@deathRagdollMerged = true
 		elseif IsValid(rag)
@@ -554,11 +577,29 @@ class NetworkedPonyData extends PPM2.ModifierBase
 	SetLocalChange: (state) => @GenericDataChange(state)
 	NetworkDataChanges: (state) => @GenericDataChange(state)
 
+	GetPonyRaceFlags: =>
+		switch @GetRace()
+			when PPM2.RACE_EARTH
+				return 0
+			when PPM2.RACE_PEGASUS
+				return PPM2.RACE_HAS_WINGS
+			when PPM2.RACE_UNICORN
+				return PPM2.RACE_HAS_HORN
+			when PPM2.RACE_ALICORN
+				return PPM2.RACE_HAS_HORN + PPM2.RACE_HAS_WINGS
+
 	SlowUpdate: =>
 		@GetBodygroupController()\SlowUpdate() if @GetBodygroupController()
 		@GetWeightController()\SlowUpdate() if @GetWeightController()
 		if scale = @GetSizeController()
 			scale\SlowUpdate()
+
+		if SERVER and IsValid(@ent) and @ent\IsPlayer()
+			arms = @ent\GetHands()
+
+			if IsValid(arms)
+				cond = @GetPonyRaceFlags()\band(PPM2.RACE_HAS_HORN) ~= 0 and @ent\GetInfoBool('ppm2_cl_vm_magic_hands', true) and PPM2.HAND_BODYGROUP_MAGIC or PPM2.HAND_BODYGROUP_HOOVES
+				arms\SetBodygroup(PPM2.HAND_BODYGROUP_ID, cond)
 
 	Think: =>
 	RenderScreenspaceEffects: =>
@@ -656,6 +697,7 @@ class NetworkedPonyData extends PPM2.ModifierBase
 		@GetSizeController()\Remove() if @GetSizeController()
 		@flightController\Switch(false) if @flightController
 		@@RenderTasks = [task for i, task in pairs @@NW_Objects when task\IsValid() and IsValid(task.ent) and not task.ent\IsPlayer() and not task\GetDisableTask()]
+		@@CheckTasks = [task for i, task in pairs @@NW_Objects when task\IsValid() and IsValid(task.ent) and not task\GetDisableTask()]
 
 	__tostring: => "[#{@@__name}:#{@netID}|#{@ent}]"
 
@@ -668,6 +710,19 @@ class NetworkedPonyData extends PPM2.ModifierBase
 	GetNetworkID: => @netID
 	NetworkID: => @netID
 	NetID: => @netID
+
+	ComputeMagicColor: =>
+		color = @GetHornMagicColor()
+
+		if not @GetSeparateMagicColor()
+			if not @GetSeparateEyes()
+				color = @GetEyeIrisTop()\Lerp(0.5, @GetEyeIrisBottom())
+			else
+				lerpLeft = @GetEyeIrisTopLeft()\Lerp(0.5, @GetEyeIrisBottomLeft())
+				lerpRight = @GetEyeIrisTopRight()\Lerp(0.5, @GetEyeIrisBottomRight())
+				color = lerpLeft\Lerp(0.5, lerpRight)
+
+		return color
 
 	ReadNetworkData: (len = 24, ply = NULL, silent = false, applyEntities = true) =>
 		data = @@ReadNetworkData()
@@ -753,6 +808,9 @@ else
 		ply.__ppm2_modified_jump = false
 	hook.Add 'OnPlayerChangedTeam', 'PPM2.TeamWaypoint', (ply, old, new) ->
 		ply.__ppm2_modified_jump = false
+
+_G.LocalPonyData = () -> LocalPlayer()\GetPonyData()
+_G.LocalPonydata = () -> LocalPlayer()\GetPonyData()
 
 entMeta = FindMetaTable('Entity')
 entMeta.GetPonyData = =>

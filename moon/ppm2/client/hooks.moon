@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -87,7 +87,7 @@ concommand.Add 'ppm2_reload', ->
 	instance = PPM2.GetMainData()
 	newData = instance\CreateNetworkObject()
 	newData\Create()
-	instance\SetNetworkData(newData)
+	instance\SetNetworkObject(newData)
 	PPM2.Message 'Sending pony data to server...'
 
 if not IsValid(LocalPlayer())
@@ -114,20 +114,22 @@ PPM_HINT_COLOR_SECOND = Color(0, 0, 0)
 net.receive 'PPM2.EditorCamPos', ->
 	ply = net.ReadPlayer()
 	return if not ply\IsValid()
-	ply.__ppm2_campos, ply.__ppm2_camang = LocalToWorld(net.ReadVector(), net.ReadAngle(), ply\GetPos(), ply\EyeAngles())
+	pVector, pAngle = net.ReadVector(), net.ReadAngle()
 
 	if not IsValid(ply.__ppm2_cam)
 		ply.__ppm2_cam = ClientsideModel('models/tools/camera/camera.mdl', RENDERGROUP_BOTH)
 		ply.__ppm2_cam\SetModelScale(0.4)
 		ply.__ppm2_cam.RenderOverride = =>
+			return if not ply.__ppm2_campos_lerp
 			render.DrawLine(ply.__ppm2_campos_lerp, ply\EyePos(), color_white, true)
 			@DrawModel()
 
 		hook.Add 'Think', ply.__ppm2_cam, =>
 			return @Remove() if not IsValid(ply) or not ply\GetNWBool('PPM2.InEditor')
-			ply.__ppm2_campos_lerp = Lerp(RealFrameTime() * 22, ply.__ppm2_campos_lerp or ply.__ppm2_campos, ply.__ppm2_campos)
+			findPos, findAng = LocalToWorld(pVector, pAngle, ply\GetPos(), ply\EyeAngles())
+			ply.__ppm2_campos_lerp = Lerp(RealFrameTime() * 22, ply.__ppm2_campos_lerp or findPos, findPos)
 			@SetPos(ply.__ppm2_campos_lerp)
-			@SetAngles(ply.__ppm2_camang)
+			@SetAngles(findAng)
 
 hook.Add 'HUDPaint', 'PPM2.EditorStatus', ->
 	lply = LocalPlayer()
@@ -158,6 +160,8 @@ hook.Add 'HUDPaint', 'PPM2.EditorStatus', ->
 					text = DLib.i18n.localize('tip.ppm2.camera', ply\Nick())
 					draw.DrawText(text, 'HudHintTextLarge', x, y, Color(0, 0, 0, alpha), TEXT_ALIGN_CENTER)
 					draw.DrawText(text, 'HudHintTextLarge', x + 1, y + 1, Color(255, 255, 255, alpha), TEXT_ALIGN_CENTER)
+
+hook.Add 'PACChooseDeathRagdoll', 'PPM2.DeathRagdoll', (ragdoll) => @GetNWEntity('PPM2.DeathRagdoll') if IsValid(@GetNWEntity('PPM2.DeathRagdoll'))
 
 concommand.Add 'ppm2_cleanup', ->
 	for _, ent in ipairs ents.GetAll()
@@ -190,5 +194,29 @@ cvars.AddChangeCallback('ppm2_cl_hires_body', (->
 		RunConsoleCommand('ppm2_reload')
 	)
 ), 'ppm2')
+
+-- Jazztronauts cutscenes support
+timer.Simple 0, ->
+	if dialog and dialog.CreatePlayerProxy
+		if info = debug.getinfo(dialog.CreatePlayerProxy)
+			if info.short_src and (info.short_src\find('jazztronauts') or info.short_src\find('ppm2'))
+				dialog._PPM2_CreatePlayerProxy = dialog._PPM2_CreatePlayerProxy or dialog.CreatePlayerProxy
+				dialog.CreatePlayerProxy = (...) ->
+					ent = dialog._PPM2_CreatePlayerProxy(...)
+
+					if IsValid(ent)
+						if data = LocalPonyData()
+							ment = ent.Get and ent\Get() or ent
+							newdata = PPM2.NetworkedPonyData(nil, ment) if not ment\GetPonyData()
+							newdata = ment\GetPonyData() if ment\GetPonyData()
+							ment.__ppm2RenderOverride = nil
+							ment.__ppm2_oldRenderOverride = nil
+							data\ApplyDataToObject(newdata)
+							newdata\SetHideManes(false)
+							newdata\SetHideManesSocks(false)
+
+
+
+					return ent
 
 return

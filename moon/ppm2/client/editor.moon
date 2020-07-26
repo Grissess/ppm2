@@ -1,5 +1,5 @@
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -292,7 +292,7 @@ CALC_VIEW_PANEL = {
 	SetRealSize: (w = @realW, h = @realH) => @realW, @realH = w, h
 	SetRealPos: (x = @realX, y = @realY) => @realX, @realY = x, y
 
-	CalcView: (ply = LocalPlayer(), origin = Vector(0, 0, 0), angles = Angle(0, 0, 0), fov = @fov, znear = 0, zfar = 1000) =>
+	CalcView: (ply = LocalPlayer(), origin = Vector(0, 0, 0), angles = Angle(0, 0, 0), fov = @fov, znear, zfar) =>
 		return hook.Remove('CalcView', @) if not @IsValid()
 		return if not @IsVisible()
 		origin, angles = LocalToWorld(@drawPos, @drawAngle, LocalPlayer()\GetPos(), Angle(0, LocalPlayer()\EyeAnglesFixed().y, 0))
@@ -650,7 +650,7 @@ PPM2.EditorBuildNewFilesPanel = =>
 						surface.DrawTexturedRect(x, y, 512, 512)
 					else
 						if not @genPreview
-							PPM2.PonyDataInstance(fil2)\SavePreview()
+							PPM2.PonyDataInstance(fil2)\WriteThumbnail()
 							@genPreview = true
 							timer.Simple 1, ->
 								@png = Material('data/ppm2/thumbnails/' .. fil2 .. '.png')
@@ -723,7 +723,7 @@ PPM2.EditorBuildOldFilesPanel = =>
 					surface.DrawTexturedRect(x, y, 512, 512)
 				else
 					if not @genPreview
-						PPM2.ReadFromOldData(fil2)\SavePreview()
+						PPM2.ReadFromOldData(fil2)\WriteThumbnail()
 						@genPreview = true
 						timer.Simple 1, ->
 							@png = Material('data/ppm2/thumbnails/' .. fil2 .. '_imported.png')
@@ -870,6 +870,38 @@ PANEL_SETTINGS_BASE = {
 			w, h = \GetSize()
 			\SetSize(w, h + 5)
 			@scroll\AddItem(withPanel) if IsValid(@scroll) and parent == @scroll
+	SizeLabel: (phrase, startPos, endPos, parent = @scroll or @) =>
+		func = (_, label) ->
+			data = @frame.controller
+			return if not data
+			ent = data\GetEntity()
+			return if not IsValid(ent)
+
+			startPos = ent\LookupBone(startPos) if type(startPos) == 'string'
+			endPos = ent\LookupBone(endPos) if type(endPos) == 'string'
+
+			pos1 = ent\GetBonePosition(startPos) if startPos and startPos ~= -1
+			pos1 = ent\GetPos() if not pos1
+			pos2 = ent\GetBonePosition(endPos) if endPos and endPos ~= -1
+			pos2 = ent\GetPos() if not pos2
+
+			label\SetText(DLib.i18n.localize(phrase, DLib.i18n.FormatHU(pos1\Distance(pos2))))
+
+		@LabelFunc(phrase, func)
+	LabelFunc: (func, parent = @scroll or @) =>
+		@createdPanels += 1
+		with withPanel = vgui.Create('DLabel', parent)
+			\SetText('...')
+			\SetTooltip('...')
+			\Dock(TOP)
+			\DockMargin(2, 2, 2, 2)
+			\SetTextColor(color_white)
+			\SizeToContents()
+			\SetMouseInputEnabled(true)
+			w, h = \GetSize()
+			\SetSize(w, h + 5)
+			@scroll\AddItem(withPanel) if IsValid(@scroll) and parent == @scroll
+			.Think = -> func(@, withPanel)
 	URLLabel: (text = '', url = '', parent = @scroll or @) =>
 		@createdPanels += 1
 		with withPanel = vgui.Create('DLabel', parent)
@@ -925,8 +957,10 @@ PANEL_SETTINGS_BASE = {
 	ColorBox: (name = 'Colorful Box', option = '', parent = @scroll or @) =>
 		@createdPanels += 7
 		collapse = vgui.Create('DCollapsibleCategory', parent)
-		box = vgui.Create('DColorMixer', collapse)
+		box = vgui.Create('DLibColorMixer', collapse)
+		box\SetTallLayout(true)
 		collapse.box = box
+
 		with box
 			\SetSize(250, 270)
 			\SetTooltip('gui.ppm2.editor.generic.datavalue', name, option)
@@ -941,15 +975,17 @@ PANEL_SETTINGS_BASE = {
 					@ValueChanges(option, newVal, pnl)
 			table.insert @updateFuncs, ->
 				\SetColor(@GetTargetData()["Get#{option}"](@GetTargetData())) if @GetTargetData()
+
 		with collapse
 			\SetContents(box)
 			\Dock(TOP)
 			\DockMargin(2, 2, 2, 2)
-			\SetSize(250, 270)
+			\SetSize(250, 340)
 			\SetLabel(name)
 			\SetExpanded(false)
 			@scroll\AddItem(collapse) if IsValid(@scroll) and parent == @scroll
 			@CreateResetButton(name, option, collapse)
+
 		return box, collapse
 	Spoiler: (name = 'gui.ppm2.editor.generic.spoiler', parent = @scroll or @) =>
 		@createdPanels += 2
@@ -1077,6 +1113,8 @@ EditorPages = {
 		'name': 'gui.ppm2.editor.tabs.main'
 		'internal': 'main'
 		'func': (sheet) =>
+			@ScrollPanel()
+
 			@Button 'gui.ppm2.editor.io.newfile.title', ->
 				data = @GetTargetData()
 				return if not data
@@ -1084,6 +1122,8 @@ EditorPages = {
 					data\SetFilename("new_pony-#{math.random(1, 100000)}")
 					data\Reset()
 					@ValueChanges()
+					@frame.DoUpdate()
+
 				Derma_Query('gui.ppm2.editor.io.newfile.confirm', 'gui.ppm2.editor.io.newfile.toptext', 'gui.ppm2.editor.generic.yes', confirmed, 'gui.ppm2.editor.generic.no')
 
 			@Button 'gui.ppm2.editor.io.random', ->
@@ -1092,6 +1132,7 @@ EditorPages = {
 				confirmed = ->
 					PPM2.Randomize(data, false)
 					@ValueChanges()
+					@frame.DoUpdate()
 				Derma_Query('Really want to randomize?', 'Randomize', 'gui.ppm2.editor.generic.yes', confirmed, 'gui.ppm2.editor.generic.no')
 
 			@ComboBox('gui.ppm2.editor.misc.race', 'Race')
@@ -1100,6 +1141,27 @@ EditorPages = {
 			@NumSlider('gui.ppm2.editor.misc.chest', 'MaleBuff', 2)
 			@NumSlider('gui.ppm2.editor.misc.weight', 'Weight', 2)
 			@NumSlider('gui.ppm2.editor.misc.size', 'PonySize', 2)
+
+			size = (_, label) ->
+				size = @frame.controller\GetSizeController()
+				return if not size
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony', DLib.i18n.FormatHU(size\CalculatePonyHeight())))
+
+			@LabelFunc(size)
+
+			size = (_, label) ->
+				size = @frame.controller\GetSizeController()
+				return if not size
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony_width', DLib.i18n.FormatHU(size\CalculatePonyWidth())))
+
+			@LabelFunc(size)
+
+			size = (_, label) ->
+				size = @frame.controller\GetSizeController()
+				return if not size
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony2', DLib.i18n.FormatHU(size\CalculatePonyHeightFull())))
+
+			@LabelFunc(size)
 
 			return if not ADVANCED_MODE\GetBool()
 			@CheckBox('gui.ppm2.editor.misc.hide_weapons', 'HideWeapons')
@@ -1123,15 +1185,55 @@ EditorPages = {
 			@ColorBox('gui.ppm2.editor.body.color', 'BodyColor')
 
 			if ADVANCED_MODE\GetBool()
+				@Hr()
 				@CheckBox('gui.ppm2.editor.face.inherit.lips', 'LipsColorInherit')
 				@CheckBox('gui.ppm2.editor.face.inherit.nose', 'NoseColorInherit')
 				@ColorBox('gui.ppm2.editor.face.lips', 'LipsColor')
 				@ColorBox('gui.ppm2.editor.face.nose', 'NoseColor')
 				PPM2.EditorPhongPanels(@, 'Body', 'gui.ppm2.editor.body.body_phong')
 
+			@Hr()
 			@NumSlider('gui.ppm2.editor.neck.height', 'NeckSize', 2)
 			@NumSlider('gui.ppm2.editor.legs.height', 'LegsSize', 2)
 			@NumSlider('gui.ppm2.editor.body.spine_length', 'BackSize', 2)
+
+			size = (_, label) ->
+				size = @frame.controller\GetBackSize() * 7 * @frame.controller\GetPonySize()
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.back', DLib.i18n.FormatHU(size)))
+
+			@LabelFunc(size)
+
+			size = (_, label) ->
+				size = @frame.controller\GetNeckSize() * 4.3 * @frame.controller\GetPonySize()
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.neck', DLib.i18n.FormatHU(size)))
+
+			@LabelFunc(size)
+
+			size = (_, label) ->
+				size = @frame.controller\GetSizeController()
+				return if not size
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony', DLib.i18n.FormatHU(size\CalculatePonyHeight())))
+
+			@LabelFunc(size)
+
+			size = (_, label) ->
+				size = @frame.controller\GetSizeController()
+				return if not size
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony2', DLib.i18n.FormatHU(size\CalculatePonyHeightFull())))
+
+			@LabelFunc(size)
+
+			if ADVANCED_MODE\GetBool()
+				@Hr()
+				@CheckBox('gui.ppm2.editor.body.disable_hoofsteps', 'DisableHoofsteps')
+				@CheckBox('gui.ppm2.editor.body.disable_wander_sounds', 'DisableWanderSounds')
+				@CheckBox('gui.ppm2.editor.body.disable_new_step_sounds', 'DisableStepSounds')
+				@CheckBox('gui.ppm2.editor.body.disable_jump_sound', 'DisableJumpSound')
+				@CheckBox('gui.ppm2.editor.body.disable_falldown_sound', 'DisableFalldownSound')
+
+				@Hr()
+				@CheckBox('gui.ppm2.editor.body.call_playerfootstep', 'CallPlayerFootstepHook')
+				@Label('gui.ppm2.editor.body.call_playerfootstep_desc')
 
 			@Hr()
 			@CheckBox('gui.ppm2.editor.legs.socks.simple', 'Socks') if ADVANCED_MODE\GetBool()
@@ -1174,6 +1276,10 @@ EditorPages = {
 			@CheckBox('gui.ppm2.editor.horn.separate_color', 'SeparateHorn')
 			@CheckBox('gui.ppm2.editor.horn.separate_phong', 'SeparateHornPhong') if ADVANCED_MODE\GetBool()
 			@CheckBox('gui.ppm2.editor.horn.separate_magic_color', 'SeparateMagicColor')
+			if ADVANCED_MODE\GetBool()
+				@Hr()
+				@CheckBox('gui.ppm2.editor.horn.use_new', 'UseNewHorn')
+				@ComboBox('gui.ppm2.editor.horn.new_type', 'NewHornType')
 			@Hr()
 			@ColorBox('gui.ppm2.editor.wings.color', 'WingsColor')
 			PPM2.EditorPhongPanels(@, 'Wings', 'gui.ppm2.editor.wings.wings_phong') if ADVANCED_MODE\GetBool()
@@ -1208,22 +1314,22 @@ EditorPages = {
 		'display': (editorMode = false) -> not IS_USING_NEW(editorMode)
 		'func': (sheet) =>
 			@ScrollPanel()
-			@ComboBox('Mane type', 'ManeType')
-			@ComboBox('Lower Mane type', 'ManeTypeLower')
-			@ComboBox('Tail type', 'TailType')
+			@ComboBox('gui.ppm2.editor.mane.type', 'ManeType')
+			@ComboBox('gui.ppm2.editor.mane.down.type', 'ManeTypeLower')
+			@ComboBox('gui.ppm2.editor.tail.type', 'TailType')
 
-			@CheckBox('Hide entitites when using PAC3 entity', 'HideManes')
-			@CheckBox('Hide socks when using PAC3 entity', 'HideManesSocks')
+			@CheckBox('gui.ppm2.editor.misc.hide_pac3', 'HideManes')
+			@CheckBox('gui.ppm2.editor.misc.hide_socks', 'HideManesSocks')
 
-			@NumSlider('Tail size', 'TailSize', 2)
-
-			@Hr()
-			@ColorBox("Mane color #{i}", "ManeColor#{i}") for i = 1, 2
-			@ColorBox("Tail color #{i}", "TailColor#{i}") for i = 1, 2
+			@NumSlider('gui.ppm2.editor.tail.size', 'TailSize', 2)
 
 			@Hr()
-			@ColorBox("Mane detail color #{i}", "ManeDetailColor#{i}") for i = 1, 4
-			@ColorBox("Tail detail color #{i}", "TailDetailColor#{i}") for i = 1, 4
+			@ColorBox("gui.ppm2.editor.mane.color#{i}", "ManeColor#{i}") for i = 1, 2
+			@ColorBox("gui.ppm2.editor.tail.color#{i}", "TailColor#{i}") for i = 1, 2
+
+			@Hr()
+			@ColorBox("gui.ppm2.editor.mane.detail_color#{i}", "ManeDetailColor#{i}") for i = 1, 4
+			@ColorBox("gui.ppm2.editor.tail.detail_color#{i}", "TailDetailColor#{i}") for i = 1, 4
 	}
 
 	{
@@ -1252,8 +1358,8 @@ EditorPages = {
 			@Hr()
 			@CheckBox('gui.ppm2.editor.tail.separate', 'SeparateTailPhong') if ADVANCED_MODE\GetBool()
 			PPM2.EditorPhongPanels(@, 'Tail', 'gui.ppm2.editor.tail.tail_phong') if ADVANCED_MODE\GetBool()
-			@ColorBox("gui.ppm2.editor.mane.detail_color#{i}", "ManeDetailColor#{i}") for i = 1, ADVANCED_MODE\GetBool() and 6 or 4
-			@ColorBox('gui.ppm2.editor.tail.detail' .. i, "TailDetailColor#{i}") for i = 1, ADVANCED_MODE\GetBool() and 6 or 4
+			@ColorBox("gui.ppm2.editor.mane.detail_color#{i}", "ManeDetailColor#{i}") for i = 1, 6
+			@ColorBox('gui.ppm2.editor.tail.detail' .. i, "TailDetailColor#{i}") for i = 1, 6
 
 			return if not ADVANCED_MODE\GetBool()
 
@@ -1267,8 +1373,8 @@ EditorPages = {
 			@ColorBox("gui.ppm2.editor.mane.down.color#{i}", "LowerManeColor#{i}") for i = 1, 2
 
 			@Hr()
-			@ColorBox("gui.ppm2.editor.mane.up.detail_color#{i}", "UpperManeDetailColor#{i}") for i = 1, ADVANCED_MODE\GetBool() and 6 or 4
-			@ColorBox("gui.ppm2.editor.mane.down.detail_color#{i}", "LowerManeDetailColor#{i}") for i = 1, ADVANCED_MODE\GetBool() and 6 or 4
+			@ColorBox("gui.ppm2.editor.mane.up.detail_color#{i}", "UpperManeDetailColor#{i}") for i = 1, 6
+			@ColorBox("gui.ppm2.editor.mane.down.detail_color#{i}", "LowerManeDetailColor#{i}") for i = 1, 6
 	}
 
 	{
@@ -1276,6 +1382,7 @@ EditorPages = {
 		'internal': 'face'
 		'func': (sheet) =>
 			@ScrollPanel()
+
 			@ComboBox('gui.ppm2.editor.face.eyelashes', 'EyelashType')
 			@ColorBox('gui.ppm2.editor.face.eyelashes_color', 'EyelashesColor')
 			@ColorBox('gui.ppm2.editor.face.eyebrows_color', 'EyebrowsColor')
@@ -1418,17 +1525,47 @@ EditorPages = {
 	}
 
 	{
+		'name': 'gui.ppm2.editor.tabs.clothes'
+		'internal': 'clothes'
+		'func': (sheet) =>
+			@ScrollPanel()
+			@ComboBox('gui.ppm2.editor.clothes.body', 'BodyClothes')
+			@ComboBox('gui.ppm2.editor.clothes.neck', 'NeckClothes')
+			@ComboBox('gui.ppm2.editor.clothes.eye', 'EyeClothes')
+			@ComboBox('gui.ppm2.editor.clothes.head', 'HeadClothes')
+			return if not ADVANCED_MODE\GetBool()
+
+			@Hr()
+			@Label('gui.ppm2.editor.clothes_col.help')
+
+			for {internal, publicName} in *{{'head', 'Head'}, {'neck', 'Neck'}, {'body', 'Body'}, {'eye', 'Eye'}}
+				@Hr()
+				@CheckBox("gui.ppm2.editor.clothes_col.#{internal}_use", "#{publicName}ClothesUseColor")
+
+				for i = 1, PPM2.MAX_CLOTHES_URLS
+					@Label('gui.ppm2.editor.clothes.' .. internal .. '_url' .. i)
+					@URLInput("#{publicName}ClothesURL#{i}")
+
+				@ColorBox("gui.ppm2.editor.clothes_col.#{internal}_#{i}", "#{publicName}ClothesColor#{i}") for i = 1, PPM2.MAX_CLOTHES_COLORS
+	}
+
+	{
 		'name': 'gui.ppm2.editor.old_tabs.body_details'
 		'internal': 'bodydetails'
 		'func': (sheet) =>
 			@ScrollPanel()
 
+			@NumSlider('gui.ppm2.editor.body.bump', 'BodyBumpStrength', 2)
+
 			for i = 1, ADVANCED_MODE\GetBool() and PPM2.MAX_BODY_DETAILS or 3
 				@ComboBox('gui.ppm2.editor.body.detail.desc' .. i, "BodyDetail#{i}")
 				@ColorBox('gui.ppm2.editor.body.detail.color' .. i, "BodyDetailColor#{i}")
+
 				if ADVANCED_MODE\GetBool()
+					@CheckBox('gui.ppm2.editor.body.detail.first', "BodyDetailFirst#{i}")
 					@CheckBox('gui.ppm2.editor.body.detail.glow' .. i, "BodyDetailGlow#{i}")
 					@NumSlider('gui.ppm2.editor.body.detail.glow_strength' .. i, "BodyDetailGlowStrength#{i}", 2)
+
 				@Hr()
 
 			@Label('gui.ppm2.editor.body.url_desc')
@@ -1437,6 +1574,7 @@ EditorPages = {
 			for i = 1, ADVANCED_MODE\GetBool() and PPM2.MAX_BODY_DETAILS or 2
 				@Label('gui.ppm2.editor.body.detail.url.desc' .. i)
 				@URLInput("BodyDetailURL#{i}")
+				@CheckBox('gui.ppm2.editor.body.detail.first', "BodyDetailURLFirst#{i}")
 				@ColorBox('gui.ppm2.editor.body.detail.url.color' .. i, "BodyDetailURLColor#{i}")
 				@Hr()
 	}
@@ -1515,7 +1653,7 @@ EditorPages = {
 				.Paint = (pnl, w = 0, h = 0) ->
 					data = @GetTargetData()
 					return if not data
-					controller = data\GetController()
+					controller = data\GetNetworkObject()
 					return if not controller
 					rcontroller = controller\GetRenderController()
 					return if not rcontroller
@@ -1659,7 +1797,7 @@ PPM2.EditorCreateTopButtons = (isNewEditor = false, addFullbright = false) =>
 			mainData = PPM2.GetMainData()
 			nwdata = LocalPlayer()\GetPonyData()
 			if nwdata
-				mainData\SetNetworkData(nwdata)
+				mainData\SetNetworkObject(nwdata)
 				if nwdata.netID == -1
 					nwdata.NETWORKED = false
 					nwdata\Create()
@@ -1731,7 +1869,7 @@ PPM2.OpenNewEditor = ->
 			\SetVisible(true)
 			.controller = LocalPlayer()\GetPonyData() or .controller
 			.data\ApplyDataToObject(.controller, false)
-			.data\SetNetworkData(.controller)
+			.data\SetNetworkObject(.controller)
 			.leftPanel\SetVisible(true)
 			.calcPanel\SetVisible(true)
 			net.Start('PPM2.EditorStatus')
@@ -1819,7 +1957,7 @@ PPM2.OpenNewEditor = ->
 
 	copy = PPM2.GetMainData()\Copy()
 	@controller = controller
-	copy\SetNetworkData(@controller)
+	copy\SetNetworkObject(@controller)
 	copy\SetNetworkOnChange(false)
 	@data = copy
 	@DoUpdate = -> pnl\DoUpdate() for i, pnl in pairs @panels
@@ -1904,10 +2042,10 @@ PPM2.OpenOldEditor = ->
 	ent = @model\ResetModel(nil, EditorModels[editorModelSelect])
 	controller = copy\CreateCustomController(ent)
 	controller\SetFlexLerpMultiplier(1.3)
-	copy\SetController(controller)
-	frame.controller = controller
-	frame.data = copy
-	frame.DoUpdate = -> pnl\DoUpdate() for i, pnl in pairs @panels
+	copy\SetNetworkObject(controller)
+	@controller = controller
+	@data = copy
+	@DoUpdate = -> pnl\DoUpdate() for i, pnl in pairs @panels
 
 	PPM2.EditorCreateTopButtons(@)
 
@@ -1990,6 +2128,7 @@ hook.Add 'PopulateToolMenu', 'PPM2.PonyPosing', -> spawnmenu.AddToolMenuOption '
 	@CheckBox 'gui.ppm2.spawnmenu.noflexes', 'ppm2_disable_flexes'
 	@CheckBox 'gui.ppm2.spawnmenu.advancedmode', 'ppm2_editor_advanced'
 	@CheckBox 'gui.ppm2.spawnmenu.reflections', 'ppm2_cl_reflections'
+	@CheckBox 'gui.ppm2.spawnmenu.vm_magic', 'ppm2_cl_vm_magic'
 	@NumSlider 'gui.ppm2.spawnmenu.reflections_drawdist', 'ppm2_cl_reflections_drawdist', 0, 1024, 0
 	@NumSlider 'gui.ppm2.spawnmenu.reflections_renderdist', 'ppm2_cl_reflections_renderdist', 32, 4096, 0
 	@CheckBox 'gui.ppm2.spawnmenu.doublejump', 'ppm2_flight_djump'

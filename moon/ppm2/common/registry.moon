@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@ list.Set('PlayerOptionsModel', 'pony_cppm', 'models/cppm/player_default_base.mdl
 player_manager.AddValidModel('ponynj_cppm', 'models/cppm/player_default_base_nj.mdl')
 list.Set('PlayerOptionsModel', 'ponynj_cppm', 'models/cppm/player_default_base_nj.mdl')
 
-player_manager.AddValidHands(model, 'models/cppm/pony_arms.mdl', 0, '') for _, model in ipairs {'pony', 'pony_cppm', 'ponynj', 'ponynj_cppm', 'pony_old'}
+player_manager.AddValidHands(model, 'models/ppm/c_arms_pony.mdl', 0, '') for model in *{'pony', 'pony_cppm', 'ponynj', 'ponynj_cppm', 'pony_old'}
 
 PPM2.MIN_WEIGHT = 0.7
 PPM2.MAX_WEIGHT = 1.5
@@ -90,6 +90,10 @@ PPM2.MAX_PUPIL_SIZE = 1
 PPM2.MIN_EYE_ROTATION = -180
 PPM2.MAX_EYE_ROTATION = 180
 
+PPM2.HAND_BODYGROUP_ID = 0
+PPM2.HAND_BODYGROUP_MAGIC = 0
+PPM2.HAND_BODYGROUP_HOOVES = 1
+
 PPM2.AvaliableTails = {
 	'MAILCALL'
 	'FLOOFEH'
@@ -106,6 +110,32 @@ PPM2.AvaliableTails = {
 	'POOFEH'
 	'CURLY'
 	'NONE'
+}
+
+PPM2.AvailableClothesHead = {
+	'EMPTY', 'APPLEJACK_HAT', 'BRAEBURN_HAT', 'TRIXIE_HAT', 'HEADPHONES'
+}
+
+PPM2.AvailableClothesNeck = {
+	'EMPTY', 'SCARF', 'TRIXIE_CAPE', 'TIE', 'BOWTIE'
+}
+
+PPM2.AvailableClothesBody = {
+	'EMPTY', 'VEST', 'SHIRT', 'HOODIE', 'WONDERBOLTS_BADGE'
+}
+
+PPM2.AvailableClothesEye = {
+	'EMPTY', 'GOGGLES_ROUND_FEMALE', 'GOGGLES_ROUND_MALE', 'SHADES_FEMALE', 'SHADES_MALE'
+	'MONOCLE_FEMALE', 'MONOCLE_MALE', 'EYEPATH_FEMALE', 'EYEPATH_MALE'
+}
+
+PPM2.MAX_CLOTHES_COLORS = 6
+PPM2.MAX_CLOTHES_URLS = 4
+
+PPM2.AvailableHorns = {
+	'EMPTY', 'CUSTOM', 'CLASSIC_SHARP', 'CLASSIC', 'BROKEN', 'LONG'
+	'LONG_CURLED', 'POISON_JOKE', 'CHANGELING'
+	'CHANGELING_QUEEN', 'KIRIN'
 }
 
 PPM2.AvaliableUpperManes = {
@@ -131,6 +161,17 @@ PPM2.BodyDetails = {
 	'DASH-E', 'Eye Scar', 'Eye Wound', 'Scars', 'MGS Socks'
 	'Sharp Hooves', 'Sharp Hooves 2', 'Muzzle', 'Eye Scar Left'
 	'Eye Scar Right'
+
+	'Albedo Printed Plate Skin'
+	'Paintable Printed Plate Skin'
+	'Albedo Printed Plate Strip'
+	'Paintable Printed Plate Strip'
+	'Cow Details'
+	'Deer Details'
+	'Extended Deer Details'
+	'Demonic'
+	'Ear Inner Detail'
+	'Zebra Details'
 }
 
 PPM2.BodyDetailsEnum = {
@@ -140,6 +181,17 @@ PPM2.BodyDetailsEnum = {
 	'DASH_E', 'EYE_SCAR', 'EYE_WOUND', 'SCARS', 'MGS_SOCKS'
 	'SHARP_HOOVES', 'SHARP_HOOVES_2', 'MUZZLE', 'EYE_SCAR_LEFT'
 	'EYE_SCAR_RIGHT'
+
+	'ALBEDO_ANDROID'
+	'PAINT_ANDROID'
+	'ALBEDO_ANDROID_STRIP'
+	'PAINT_ANDROID_STRIP'
+	'COW'
+	'DEER'
+	'DEER_EXTENDED'
+	'DEMONIC'
+	'EAR_INNER'
+	'ZEBRA_DETAILS'
 }
 
 PPM2.SocksTypes = {
@@ -314,6 +366,9 @@ PPM2.RACE_PEGASUS = 1
 PPM2.RACE_UNICORN = 2
 PPM2.RACE_ALICORN = 3
 PPM2.RACE_ENUMS = {'EARTH', 'PEGASUS', 'UNICORN', 'ALICORN'}
+
+PPM2.RACE_HAS_HORN = 0x1
+PPM2.RACE_HAS_WINGS = 0x2
 
 PPM2.AGE_FILLY = 0
 PPM2.AGE_ADULT = 1

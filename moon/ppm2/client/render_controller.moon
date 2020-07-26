@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,14 @@
 
 import PPM2 from _G
 
+vector_one = Vector(1, 1, 1)
+
 ENABLE_FLASHLIGHT_PASS = CreateConVar('ppm2_flashlight_pass', '1', {FCVAR_ARCHIVE}, 'Enable flashlight render pass. This kills FPS.')
 ENABLE_LEGS = CreateConVar('ppm2_draw_legs', '1', {FCVAR_ARCHIVE}, 'Draw pony legs.')
 USE_RENDER_OVERRIDE = CreateConVar('ppm2_legs_new', '1', {FCVAR_ARCHIVE}, 'Use RenderOverride function for legs drawing')
 LEGS_RENDER_TYPE = CreateConVar('ppm2_render_legstype', '0', {FCVAR_ARCHIVE}, 'When render legs. 0 - Before Opaque renderables; 1 - after Translucent renderables')
 ENABLE_STARE = CreateConVar('ppm2_render_stare', '1', {FCVAR_ARCHIVE}, 'Make eyes follow players and move when idling')
+SLOW_STARE_UPDATE = CreateConVar('ppm2_render_stare_slow', '0', {FCVAR_ARCHIVE}, 'Lazy stare update to save a bit frames')
 
 class PonyRenderController extends PPM2.ControllerChildren
 	@AVALIABLE_CONTROLLERS = {}
@@ -42,14 +45,22 @@ class PonyRenderController extends PPM2.ControllerChildren
 		@CreateLegs() if @GetEntity() == LocalPlayer()
 		@socksModel = controller\GetSocksModel()
 		@socksModel\SetNoDraw(false) if IsValid(@socksModel)
+		@hornModel = controller\GetSocksModel()
+		@hornModel\SetNoDraw(false) if IsValid(@hornModel)
 		@newSocksModel = controller\GetNewSocksModel()
 		@newSocksModel\SetNoDraw(false) if IsValid(@newSocksModel)
+		@clothesModel = controller\GetClothesModel()
+		@clothesModel\SetNoDraw(false) if IsValid(@clothesModel)
 		@lastStareUpdate = 0
 		@staringAt = NULL
+		@staringAtDirectly = NULL
+		@staringAtDirectlyLast = 0
+		@staringAtDirectlyTr = false
 		@rotatedHeadTarget = false
 		@idleEyes = true
 		@idleEyesActive = false
 		@nextRollEyes = 0
+		@rollEyesDelta = CurTimeL()
 		if @GetEntity()\IsValid()
 			@CreateFlexController()
 			@CreateEmotesController()
@@ -76,7 +87,7 @@ class PonyRenderController extends PPM2.ControllerChildren
 			.__PPM2_PonyData = @GetData()
 			--\PPMBonesModifier()
 
-		@GetData()\GetWeightController()\UpdateWeight(@legsModel)
+		@GrabData('WeightController')\UpdateWeight(@legsModel)
 
 		@lastLegUpdate = CurTimeL()
 		@legClipPlanePos = Vector(0, 0, 0)
@@ -210,15 +221,23 @@ class PonyRenderController extends PPM2.ControllerChildren
 		if USE_RENDER_OVERRIDE\GetBool()
 			@legsModel\SetNoDraw(false)
 			rTime = RealTimeL()
+
 			if @legsModel.lastRedrawFix < rTime
+				@UpdateLegs()
 				@legsModel\DrawModel()
-				@legsModel.lastRedrawFix = rTime + 5
+				@legsModel.lastRedrawFix = rTime + 2
+
 			if not @legsModel.RenderOverride
 				@legsModel.RenderOverride = -> @DrawLegsOverride()
+				@UpdateLegs()
 				@legsModel\DrawModel()
+
 			return
 		else
 			@legsModel\SetNoDraw(true)
+			@legsModel.RenderOverride = nil
+
+		return if hook.Run('PPM2_ShouldDrawLegs', @GetEntity(), @legsModel) == false
 
 		@UpdateLegs()
 
@@ -233,7 +252,7 @@ class PonyRenderController extends PPM2.ControllerChildren
 		if LEGS_RENDER_TYPE\GetBool() and ENABLE_FLASHLIGHT_PASS\GetBool()
 			render.PushFlashlightMode(true)
 			@GetTextureController()\PreDrawLegs(@legsModel)
-			if sizes = @GetData()\GetSizeController()
+			if sizes = @GrabData('SizeController')
 				sizes\ModifyNeck(@legsModel)
 				sizes\ModifyLegs(@legsModel)
 				sizes\ModifyScale(@legsModel)
@@ -253,6 +272,9 @@ class PonyRenderController extends PPM2.ControllerChildren
 		return if not @GetEntity()\InVehicle() and EyeAngles().p < 60
 		return if @GetEntity()\ShouldDrawLocalPlayer()
 		return if (@GetEntity()\GetPos() + @GetEntity()\GetViewOffset())\DistToSqr(EyePos()) > @@LEGS_MAX_DISTANCE
+
+		return if hook.Run('PPM2_ShouldDrawLegs', @GetEntity(), @legsModel) == false
+
 		@UpdateLegs()
 
 		oldClip = render.EnableClipping(true)
@@ -282,7 +304,7 @@ class PonyRenderController extends PPM2.ControllerChildren
 		cam.Start3D() if start3D
 
 		@GetTextureController()\PreDrawLegs(@legsModel)
-		if sizes = @GetData()\GetSizeController()
+		if sizes = @GrabData('SizeController')
 			sizes\ModifyNeck(@legsModel)
 			sizes\ModifyLegs(@legsModel)
 			sizes\ModifyScale(@legsModel)
@@ -312,7 +334,7 @@ class PonyRenderController extends PPM2.ControllerChildren
 		if @emotes
 			@emotes\Remove()
 			@emotes = nil
-		@HideModels(true)
+		@HideModels(true) if PPM2.ENABLE_NEW_RAGDOLLS\GetBool()
 		@GetTextureController()\ResetTextures() if @GetTextureController() and @GetEntity()\IsPony()
 
 	PlayerRespawn: =>
@@ -325,12 +347,16 @@ class PonyRenderController extends PPM2.ControllerChildren
 	DrawModels: =>
 		@socksModel\DrawModel() if IsValid(@socksModel)
 		@newSocksModel\DrawModel() if IsValid(@newSocksModel)
+		@hornModel\DrawModel() if IsValid(@hornModel)
+		@clothesModel\DrawModel() if IsValid(@clothesModel)
 
 	ShouldHideModels: => @hideModels or @GetEntity()\GetNoDraw()
 
 	DoHideModels: (status) =>
 		@socksModel\SetNoDraw(status) if IsValid(@socksModel)
 		@newSocksModel\SetNoDraw(status) if IsValid(@newSocksModel)
+		@hornModel\SetNoDraw(status) if IsValid(@hornModel)
+		@clothesModel\SetNoDraw(status) if IsValid(@clothesModel)
 
 	HideModels: (status = true) =>
 		return if @hideModels == status
@@ -347,11 +373,11 @@ class PonyRenderController extends PPM2.ControllerChildren
 
 	UpdateStare: =>
 		ctime = RealTimeL()
-		return if @lastStareUpdate > ctime
+		return if @lastStareUpdate > ctime and SLOW_STARE_UPDATE\GetBool()
 
 		if (not @idleEyes or not ENABLE_STARE\GetBool()) and @idleEyesActive
 			@staringAt = NULL
-			@GetEntity()\SetEyeTarget(Vector())
+			@GetEntity()\SetEyeTarget(vector_origin)
 			@idleEyesActive = false
 			return
 
@@ -359,30 +385,74 @@ class PonyRenderController extends PPM2.ControllerChildren
 		@idleEyesActive = true
 		@lastStareUpdate = ctime + 0.2
 		lpos = @GetEntity()\EyePos()
+		lang = @GetEntity()\EyeAnglesFixed()
+		lply = LocalPlayer()
+
+		if @GetEntity() == lply and IsValid(PPM2.EditorTopFrame) and PPM2.EditorTopFrame\IsVisible()
+			if PPM2.EditorTopFrame.calcPanel and PPM2.EditorTopFrame.calcPanel.drawPos and PPM2.EditorTopFrame.calcPanel.drawAngle
+				origin, angles = LocalToWorld(PPM2.EditorTopFrame.calcPanel.drawPos, PPM2.EditorTopFrame.calcPanel.drawAngle, lply\GetPos(), Angle(0, lply\EyeAnglesFixed().y, 0))
+				origin, angles = WorldToLocal(origin, angles, lpos, lang)
+				@staringAt = NULL
+				@staringAtDirectly = NULL
+				@idleEyes = true
+				@eyeRollTargetPos = origin
+				@prevRollTargetPos = origin
+
+			return
+
+		@staringAt = NULL if IsValid(@staringAt) and @staringAt\IsPlayer() and not @staringAt\Alive()
+
+		trNew = util.TraceLine({
+			start: lpos,
+			endpos: lpos + lang\Forward() * 270,
+			filter: @GetEntity(),
+		})
+
+		if IsValid(trNew.Entity)
+			mins, maxs = trNew.Entity\OBBMins(), trNew.Entity\OBBMaxs()
+			size = mins\Distance(maxs)
+
+			if size < 140
+				@staringAtDirectly = trNew.Entity
+				@staringAtDirectlyLast = CurTimeL() + 2.5
+				@staringAtDirectlyTr = trNew
+
+		if IsValid(@staringAtDirectly) and (not @staringAtDirectly\IsPlayer() and not @staringAtDirectly\IsNPC())
+			if @staringAtDirectlyLast > CurTimeL()
+				pos = @staringAtDirectlyTr.HitPos
+
+				if pos\Distance(lpos) < 300 and DLib.combat.inPVS(@GetEntity(), @staringAtDirectly) and @CheckTarget(lpos, pos)
+					@GetEntity()\SetEyeTarget(pos)
+					_lpos, _lang = WorldToLocal(pos, angle_zero, lpos, lang)
+					@prevRollTargetPos = _lpos
+					return
+
+				@staringAtDirectly = NULL
+				@staringAtDirectlyLast = 0
+				@GetEntity()\SetEyeTarget(vector_origin)
+			else
+				@staringAtDirectly = NULL
+
+		if trNew.Entity\IsValid() and (trNew.Entity\IsPlayer() or trNew.Entity\IsNPC())
+			@staringAt = trNew.Entity
 
 		if IsValid(@staringAt)
-			trNew = util.TraceLine({
-				start: lpos,
-				endpos: lpos + @GetEntity()\EyeAnglesFixed()\Forward() * 270,
-				filter: @GetEntity(),
-			})
-
-			if trNew.Entity\IsValid() and trNew.Entity\IsPlayer()
-				@staringAt = trNew.Entity
-
 			epos = @staringAt\EyePos()
+
 			if epos\Distance(lpos) < 300 and DLib.combat.inPVS(@GetEntity(), @staringAt) and @CheckTarget(lpos, epos)
 				@GetEntity()\SetEyeTarget(epos)
+				@prevRollTargetPos = epos
 				return
+
 			@staringAt = NULL
-			@GetEntity()\SetEyeTarget(Vector())
+			@GetEntity()\SetEyeTarget(vector_origin)
 
 		if player.GetCount() ~= 1
 			local last
 			max = 300
 			local lastpos
 			for _, ply in ipairs player.GetAll()
-				if @GetEntity() ~= ply
+				if @GetEntity() ~= ply and ply\Alive()
 					epos = ply\EyePos()
 					dist = epos\Distance(lpos)
 					if dist < max and DLib.combat.inPVS(@GetEntity(), ply) and @CheckTarget(lpos, epos)
@@ -395,18 +465,35 @@ class PonyRenderController extends PPM2.ControllerChildren
 				return
 
 		return if @nextRollEyes > ctime
-		@nextRollEyes = ctime + math.random(4, 16) / 6
-		ang = @GetEntity()\EyeAnglesFixed()
+		@nextRollEyes = ctime + math.random(4, 8) / 6
 		@eyeRollTargetPos = Vector(math.random(200, 400), math.random(-80, 80), math.random(-20, 20))
 		@prevRollTargetPos = @prevRollTargetPos or @eyeRollTargetPos
 		-- @GetEntity()\SetEyeTarget(@prevRollTargetPos)
 
 	UpdateEyeRoll: =>
-		return if not ENABLE_STARE\GetBool() or not @idleEyes or not @eyeRollTargetPos or IsValid(@staringAt)
-		@prevRollTargetPos = LerpVector(FrameTime() * 6, @prevRollTargetPos, @eyeRollTargetPos)
+		return if not ENABLE_STARE\GetBool() or not @idleEyes or not @eyeRollTargetPos or IsValid(@staringAt) or IsValid(@staringAtDirectly)
+		ctime = CurTimeL()
+		delta = ctime - @rollEyesDelta
+		@rollEyesDelta = ctime
+		@prevRollTargetPos = LerpVector(delta * 25, @prevRollTargetPos, @eyeRollTargetPos)
 		roll = Vector(@prevRollTargetPos)
 		roll\Rotate(@GetEntity()\EyeAnglesFixed())
 		@GetEntity()\SetEyeTarget(@GetEntity()\EyePos() + roll)
+
+	CalculateHideModels: (ent = @GetEntity()) => ent.RenderOverride and not ent.__ppm2RenderOverride and @GrabData('HideManes') and @GrabData('HideManesSocks')
+
+	CheckModelHide: (ent = @GetEntity()) =>
+		if @CalculateHideModels(ent)
+			@socksModel\SetNoDraw(true) if IsValid(@socksModel)
+			@newSocksModel\SetNoDraw(true) if IsValid(@newSocksModel)
+			@hornModel\SetNoDraw(true) if IsValid(@hornModel)
+			@clothesModel\SetNoDraw(true) if IsValid(@clothesModel)
+		else
+			@socksModel\SetNoDraw(@ShouldHideModels()) if IsValid(@socksModel)
+			@newSocksModel\SetNoDraw(@ShouldHideModels()) if IsValid(@newSocksModel)
+			@hornModel\SetNoDraw(@ShouldHideModels()) if IsValid(@hornModel)
+			@clothesModel\SetNoDraw(@ShouldHideModels()) if IsValid(@clothesModel)
+
 
 	PreDraw: (ent = @GetEntity(), drawingNewTask = false) =>
 		return if not @isValid
@@ -416,42 +503,44 @@ class PonyRenderController extends PPM2.ControllerChildren
 
 		if drawingNewTask
 			with bones = ent\PPMBonesModifier()
-				ent\ResetBoneManipCache()
 				\ResetBones()
 				hook.Call('PPM2.SetupBones', nil, ent, @controller)
 				\Think(true)
 				ent.__ppmBonesModified = true
-				ent\ApplyBoneManipulations()
 
 		@flexes\Think(ent) if @flexes
 		@emotes\Think(ent) if @emotes
-		if @GetEntity()\IsPlayer()
+		if ent\IsPlayer()
 			@UpdateStare()
 			@UpdateEyeRoll()
 
-		if ent.RenderOverride and not ent.__ppm2RenderOverride and @GrabData('HideManes') and @GrabData('HideManesSocks')
-			@socksModel\SetNoDraw(true) if IsValid(@socksModel)
-			@newSocksModel\SetNoDraw(true) if IsValid(@newSocksModel)
-		else
-			@socksModel\SetNoDraw(@ShouldHideModels()) if IsValid(@socksModel)
-			@newSocksModel\SetNoDraw(@ShouldHideModels()) if IsValid(@newSocksModel)
+		@CheckModelHide(ent)
 
 	PostDraw: (ent = @GetEntity(), drawingNewTask = false) =>
 		return if not @isValid
 		@GetTextureController()\PostDraw(ent, drawingNewTask)
 
-	@ARMS_MATERIAL_INDEX = 0
+	@HANDS_MATERIAL_INDEX = 1
+	@MAGIC_ARMS_MATERIAL_INDEX = 0
+
 	PreDrawArms: (ent) =>
 		return if not @isValid
-		if ent and not @armsWeightSetup
-			@armsWeightSetup = true
-			weight = 1 + (@GetData()\GetWeight() - 1) * 0.4
-			vec = LVector(weight, weight, weight)
-			ent\ManipulateBoneScale2Safe(i, vec) for i = 1, 13
-		ent\SetSubMaterial(@@ARMS_MATERIAL_INDEX, @GetTextureController()\GetBodyName())
+		hooves = @GrabData('PonyRaceFlags')\band(PPM2.RACE_HAS_HORN) == 0 or not PPM2.VM_MAGIC_HANDS\GetBool()
+
+		if ent and hooves
+			weight = 1 + (@GrabData('Weight') - 1)
+			vec = Vector(weight, weight, weight)
+			ent\ManipulateBoneScale(i, vec) for i = 1, 43
+		elseif ent
+			ent\ManipulateBoneScale(i, vector_one) for i = 1, 13
+
+		if hooves
+			ent\SetSubMaterial(@@HANDS_MATERIAL_INDEX, @GetTextureController()\GetBodyName())
+
 	PostDrawArms: (ent) =>
 		return if not @isValid
-		ent\SetSubMaterial(@@ARMS_MATERIAL_INDEX, '')
+		hooves = @GrabData('PonyRaceFlags')\band(PPM2.RACE_HAS_HORN) == 0
+		ent\SetSubMaterial(@@HANDS_MATERIAL_INDEX, '') if hooves
 
 	DataChanges: (state) =>
 		return if not @isValid
@@ -459,24 +548,40 @@ class PonyRenderController extends PPM2.ControllerChildren
 		@GetTextureController()\DataChanges(state)
 		@flexes\DataChanges(state) if @flexes
 		@emotes\DataChanges(state) if @emotes
+
 		switch state\GetKey()
 			when 'Weight'
 				@armsWeightSetup = false
-				@GetData()\GetWeightController()\UpdateWeight(@legsModel) if IsValid(@legsModel)
+				@GrabData('WeightController')\UpdateWeight(@legsModel) if IsValid(@legsModel)
 			when 'SocksModel'
-				@socksModel = @GetData()\GetSocksModel()
-				@socksModel\SetNoDraw(@ShouldHideModels()) if IsValid(@socksModel)
+				@socksModel = state\GetValue()
+				-- @socksModel\SetNoDraw(@ShouldHideModels()) if IsValid(@socksModel)
+				@CheckModelHide()
 				@GetTextureController()\UpdateSocks(@GetEntity(), @socksModel) if @GetTextureController() and IsValid(@socksModel)
 			when 'NewSocksModel'
-				@newSocksModel = @GetData()\GetNewSocksModel()
-				@newSocksModel\SetNoDraw(@ShouldHideModels()) if IsValid(@newSocksModel)
+				@newSocksModel = state\GetValue()
+				-- @newSocksModel\SetNoDraw(@ShouldHideModels()) if IsValid(@newSocksModel)
+				@CheckModelHide()
 				@GetTextureController()\UpdateNewSocks(@GetEntity(), @newSocksModel) if @GetTextureController() and IsValid(@newSocksModel)
+			when 'HornModel'
+				@hornModel = state\GetValue()
+				-- @hornModel\SetNoDraw(@ShouldHideModels()) if IsValid(@hornModel)
+				@CheckModelHide()
+				@GetTextureController()\UpdateNewHorn(@GetEntity(), @hornModel) if @GetTextureController() and IsValid(@hornModel)
+			when 'ClothesModel'
+				@clothesModel = state\GetValue()
+				-- @clothesModel\SetNoDraw(@ShouldHideModels()) if IsValid(@clothesModel)
+				@CheckModelHide()
+				@GetTextureController()\UpdateClothes(@GetEntity(), @clothesModel) if @GetTextureController() and IsValid(@clothesModel)
 			when 'NoFlex'
 				if state\GetValue()
 					@flexes\ResetSequences() if @flexes
 					@flexes = nil
 				else
 					@CreateFlexController()
+			when 'EyeIrisBottom', 'EyeIrisBottomLeft', 'EyeIrisBottomRight', 'SeparateEyes', 'HornMagicColor', 'EyeIrisTop', 'EyeIrisTopLeft', 'EyeIrisTopRight'
+				if @GetEntity() == LocalPlayer()
+					PPM2.MaterialsRegistry.MAGIC_HANDS_MATERIAL\SetVector('$colortint_base', @GetData()\ComputeMagicColor()\ToVector())
 	GetTextureController: =>
 		return @renderController if not @isValid
 		if not @renderController
@@ -487,7 +592,7 @@ class PonyRenderController extends PPM2.ControllerChildren
 
 	CreateFlexController: =>
 		return @flexes if not @isValid
-		return if @GetData()\GetNoFlex()
+		return if @GrabData('NoFlex')
 		if not @flexes
 			cls = PPM2.GetFlexController(@modelCached)
 			return if not cls
@@ -525,16 +630,19 @@ class NewPonyRenderController extends PonyRenderController
 		return if not @isValid
 		switch state\GetKey()
 			when 'UpperManeModel'
-				@upperManeModel = @GetData()\GetUpperManeModel()
-				@upperManeModel\SetNoDraw(@ShouldHideModels()) if IsValid(@upperManeModel)
+				@upperManeModel = @GrabData('UpperManeModel')
+				--@upperManeModel\SetNoDraw(@ShouldHideModels()) if IsValid(@upperManeModel)
+				@CheckModelHide()
 				@GetTextureController()\UpdateUpperMane(@GetEntity(), @upperManeModel) if @GetTextureController() and IsValid(@upperManeModel)
 			when 'LowerManeModel'
-				@lowerManeModel = @GetData()\GetLowerManeModel()
-				@lowerManeModel\SetNoDraw(@ShouldHideModels()) if IsValid(@lowerManeModel)
+				@lowerManeModel = @GrabData('LowerManeModel')
+				--@lowerManeModel\SetNoDraw(@ShouldHideModels()) if IsValid(@lowerManeModel)
+				@CheckModelHide()
 				@GetTextureController()\UpdateLowerMane(@GetEntity(), @lowerManeModel) if @GetTextureController() and IsValid(@lowerManeModel)
 			when 'TailModel'
-				@tailModel = @GetData()\GetTailModel()
-				@tailModel\SetNoDraw(@ShouldHideModels()) if IsValid(@tailModel)
+				@tailModel = @GrabData('TailModel')
+				--@tailModel\SetNoDraw(@ShouldHideModels()) if IsValid(@tailModel)
+				@CheckModelHide()
 				@GetTextureController()\UpdateTail(@GetEntity(), @tailModel) if @GetTextureController() and IsValid(@tailModel)
 		super(state)
 

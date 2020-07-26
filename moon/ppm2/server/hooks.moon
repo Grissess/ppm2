@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -66,7 +66,8 @@ do
 				if data
 					table.insert(target, ent)
 
-ENABLE_NEW_RAGDOLLS = CreateConVar('ppm2_sv_new_ragdolls', '1', {FCVAR_NOTIFY, FCVAR_REPLICATED}, 'Enable new ragdolls')
+PPM2.ENABLE_NEW_RAGDOLLS = CreateConVar('ppm2_sv_phys_ragdolls', '0', {FCVAR_NOTIFY, FCVAR_REPLICATED}, 'Enable physics ragdolls (Pre March 2020 gmod update workaround)')
+ENABLE_NEW_RAGDOLLS = PPM2.ENABLE_NEW_RAGDOLLS
 RAGDOLL_COLLISIONS = CreateConVar('ppm2_sv_ragdolls_collisions', '1', {FCVAR_NOTIFY, FCVAR_REPLICATED}, 'Enable ragdolls collisions')
 
 createPlayerRagdoll = =>
@@ -101,6 +102,7 @@ createPlayerRagdoll = =>
 			physobj\SetAngles(ang) if ang
 		copy = @GetPonyData()\Clone(@__ppm2_ragdoll)
 		copy\Create()
+		@SetNWEntity('PPM2.DeathRagdoll', @__ppm2_ragdoll)
 
 ALLOW_RAGDOLL_DAMAGE = CreateConVar('ppm2_sv_ragdoll_damage', '1', {FCVAR_ARCHIVE, FCVAR_NOTIFY}, 'Should death ragdoll cause damage?')
 
@@ -121,12 +123,13 @@ hook.Add 'PostPlayerDeath', 'PPM2.Hooks', =>
 	net.Broadcast()
 	if ENABLE_NEW_RAGDOLLS\GetBool() and @IsPony()
 		createPlayerRagdoll(@)
+	return
 
 hook.Add 'PlayerDeath', 'PPM2.Hooks', =>
 	return if not @GetPonyData()
 	if ENABLE_NEW_RAGDOLLS\GetBool() and @IsPony()
 		createPlayerRagdoll(@)
-	return nil
+	return
 
 hook.Add 'EntityRemoved', 'PPM2.PonyDataRemove', =>
 	return if @IsPlayer()
@@ -136,6 +139,7 @@ hook.Add 'EntityRemoved', 'PPM2.PonyDataRemove', =>
 		net.WriteUInt(.netID, 16)
 		net.Broadcast()
 		\Remove()
+	return
 
 hook.Add 'PlayerDisconnected', 'PPM2.NotifyClients', =>
 	@__ppm2_ragdoll\Remove() if IsValid(@__ppm2_ragdoll)

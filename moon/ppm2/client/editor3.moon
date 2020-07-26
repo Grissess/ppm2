@@ -1,5 +1,5 @@
 
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -112,7 +112,7 @@ MODEL_BOX_PANEL = {
 		@lfixedDistanceToPony = 100
 
 		@vectorPos = Vector(@fixedDistanceToPony, 0, 0)
-		@lvectorPos = Vector(@fixedDistanceToPony, 0, 0)
+		@VectorPos = Vector(@fixedDistanceToPony, 0, 0)
 		@targetPos = Vector(0, 0, @PONY_VEC_Z * .7)
 		@ldrawAngle = Angle()
 
@@ -385,7 +385,7 @@ MODEL_BOX_PANEL = {
 		@ldistToPony = Lerp(lerp, @ldistToPony, @distToPony)
 		@vectorPos = Vector(@lfixedDistanceToPony, 0, 0)
 		@vectorPos\Rotate(@angle)
-		@lvectorPos = LerpVector(lerp, @lvectorPos, @vectorPos)
+		@VectorPos = LerpVector(lerp, @VectorPos, @vectorPos)
 		@drawAngle = Angle(-@angle.p, @angle.y - 180)
 		@ldrawAngle = LerpAngle(lerp, @ldrawAngle, @drawAngle)
 
@@ -410,7 +410,7 @@ MODEL_BOX_PANEL = {
 		surface.DrawRect(0, 0, w, h)
 		return if not IsValid(@model)
 		x, y = @LocalToScreen(0, 0)
-		drawpos = @lvectorPos + @GetTrackedPosition()
+		drawpos = @VectorPos + @GetTrackedPosition()
 		cam.Start3D(drawpos, @ldrawAngle, @ldistToPony, x, y, w, h)
 
 		if @holdRightClick
@@ -543,6 +543,8 @@ MODEL_BOX_PANEL = {
 			if @InMenu() and menu.getpos
 				radius = ScreenScale(10)
 				drawCrosshair(x, y, radius, @crosshairCircleSelected, @crosshairBoxSelected)
+
+		DLib.blur.RefreshNow(true)
 
 	OnRemove: =>
 		@model\Remove() if IsValid(@model)
@@ -697,6 +699,8 @@ EDIT_TREE = {
 					data\SetFilename("new_pony-#{math.random(1, 100000)}")
 					data\Reset()
 					@ValueChanges()
+					@frame.DoUpdate()
+
 				Derma_Query('gui.ppm2.editor.io.newfile.confirm', 'gui.ppm2.editor.io.newfile.toptext', 'gui.ppm2.editor.generic.yes', confirmed, 'gui.ppm2.editor.generic.no')
 
 			@Button 'gui.ppm2.editor.io.random', ->
@@ -705,6 +709,8 @@ EDIT_TREE = {
 				confirmed = ->
 					PPM2.Randomize(data, false)
 					@ValueChanges()
+					@frame.DoUpdate()
+
 				Derma_Query('Really want to randomize?', 'Randomize', 'gui.ppm2.editor.generic.yes', confirmed, 'gui.ppm2.editor.generic.no')
 
 			@ComboBox('gui.ppm2.editor.misc.race', 'Race')
@@ -713,6 +719,21 @@ EDIT_TREE = {
 			@NumSlider('gui.ppm2.editor.misc.chest', 'MaleBuff', 2)
 			@NumSlider('gui.ppm2.editor.misc.weight', 'Weight', 2)
 			@NumSlider('gui.ppm2.editor.misc.size', 'PonySize', 2)
+
+			size = (_, label) ->
+				size = @frame.controller\GetSizeController()
+				return if not size
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony', DLib.i18n.FormatHU(size\CalculatePonyHeight())))
+
+			@LabelFunc(size)
+
+			size = (_, label) ->
+				size = @frame.controller\GetSizeController()
+				return if not size
+				label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony2', DLib.i18n.FormatHU(size\CalculatePonyHeightFull())))
+
+			@LabelFunc(size)
+
 
 			return if not ADVANCED_MODE\GetBool()
 
@@ -822,7 +843,7 @@ EDIT_TREE = {
 					.Paint = (pnl, w = 0, h = 0) ->
 						data = @GetTargetData()
 						return if not data
-						controller = data\GetController()
+						controller = data\GetNetworkObject()
 						return if not controller
 						rcontroller = controller\GetRenderController()
 						return if not rcontroller
@@ -903,6 +924,20 @@ EDIT_TREE = {
 							@ComboBox('gui.ppm2.editor.face.eyelashes', 'EyelashType')
 							@ColorBox('gui.ppm2.editor.face.eyelashes_color', 'EyelashesColor')
 							@ColorBox('gui.ppm2.editor.face.eyebrows_color', 'EyebrowsColor')
+							@ComboBox('gui.ppm2.editor.clothes.eye', 'EyeClothes')
+							@ComboBox('gui.ppm2.editor.clothes.neck', 'NeckClothes')
+							@ComboBox('gui.ppm2.editor.clothes.head', 'HeadClothes')
+
+							if ADVANCED_MODE\GetBool()
+								for {internal, publicName} in *{{'head', 'Head'}, {'neck', 'Neck'}, {'eye', 'Eye'}}
+									@Hr()
+									@CheckBox("gui.ppm2.editor.clothes_col.#{internal}_use", "#{publicName}ClothesUseColor")
+
+									for i = 1, PPM2.MAX_CLOTHES_URLS
+										@Label('gui.ppm2.editor.clothes.' .. internal .. '_url' .. i)
+										@URLInput("#{publicName}ClothesURL#{i}")
+
+									@ColorBox("gui.ppm2.editor.clothes_col.#{internal}_#{i}", "#{publicName}ClothesColor#{i}") for i = 1, PPM2.MAX_CLOTHES_COLORS
 
 							@CheckBox('gui.ppm2.editor.face.new_muzzle', 'NewMuzzle')
 
@@ -999,13 +1034,26 @@ EDIT_TREE = {
 									@CheckBox('gui.ppm2.editor.misc.hide_pac3', 'HideManes')
 									@CheckBox('gui.ppm2.editor.misc.hide_mane', 'HideManesMane')
 
+									@ComboBox('gui.ppm2.editor.clothes.head', 'HeadClothes')
+
+									if ADVANCED_MODE\GetBool()
+										for {internal, publicName} in *{{'head', 'Head'}}
+											@Hr()
+											@CheckBox("gui.ppm2.editor.clothes_col.#{internal}_use", "#{publicName}ClothesUseColor")
+
+											for i = 1, PPM2.MAX_CLOTHES_URLS
+												@Label('gui.ppm2.editor.clothes.' .. internal .. '_url' .. i)
+												@URLInput("#{publicName}ClothesURL#{i}")
+
+											@ColorBox("gui.ppm2.editor.clothes_col.#{internal}_#{i}", "#{publicName}ClothesColor#{i}") for i = 1, PPM2.MAX_CLOTHES_COLORS
+
 									@Hr()
 									@CheckBox('gui.ppm2.editor.mane.phong', 'SeparateManePhong') if ADVANCED_MODE\GetBool()
 									PPM2.EditorPhongPanels(@, 'Mane', 'gui.ppm2.editor.mane.mane_phong') if ADVANCED_MODE\GetBool()
 									@ColorBox("gui.ppm2.editor.mane.color#{i}", "ManeColor#{i}") for i = 1, 2
 
 									@Hr()
-									@ColorBox("gui.ppm2.editor.mane.detail_color#{i}", "ManeDetailColor#{i}") for i = 1, ADVANCED_MODE\GetBool() and 6 or 4
+									@ColorBox("gui.ppm2.editor.mane.detail_color#{i}", "ManeDetailColor#{i}") for i = 1, 6
 
 								'gui.ppm2.editor.tabs.details': =>
 									@CheckBox('gui.ppm2.editor.mane.phong_sep', 'SeparateMane')
@@ -1017,8 +1065,8 @@ EDIT_TREE = {
 									@ColorBox("gui.ppm2.editor.mane.down.color#{i}", "LowerManeColor#{i}") for i = 1, 2
 
 									@Hr()
-									@ColorBox("gui.ppm2.editor.mane.up.detail_color#{i}", "UpperManeDetailColor#{i}") for i = 1, ADVANCED_MODE\GetBool() and 6 or 4
-									@ColorBox("gui.ppm2.editor.mane.down.detail_color#{i}", "LowerManeDetailColor#{i}") for i = 1, ADVANCED_MODE\GetBool() and 6 or 4
+									@ColorBox("gui.ppm2.editor.mane.up.detail_color#{i}", "UpperManeDetailColor#{i}") for i = 1, 6
+									@ColorBox("gui.ppm2.editor.mane.down.detail_color#{i}", "LowerManeDetailColor#{i}") for i = 1, 6
 
 								'gui.ppm2.editor.tabs.url_details': =>
 									for i = 1, ADVANCED_MODE\GetBool() and 6 or 1
@@ -1068,6 +1116,10 @@ EDIT_TREE = {
 									@ColorBox('gui.ppm2.editor.horn.color', 'HornColor')
 									@CheckBox('gui.ppm2.editor.horn.separate_magic_color', 'SeparateMagicColor')
 									@ColorBox('gui.ppm2.editor.horn.magic', 'HornMagicColor')
+									if ADVANCED_MODE\GetBool()
+										@Hr()
+										@CheckBox('gui.ppm2.editor.horn.use_new', 'UseNewHorn')
+										@ComboBox('gui.ppm2.editor.horn.new_type', 'NewHornType')
 									@CheckBox('gui.ppm2.editor.horn.separate_phong', 'SeparateHornPhong') if ADVANCED_MODE\GetBool()
 									PPM2.EditorPhongPanels(@, 'Horn', 'gui.ppm2.editor.horn.horn_phong') if ADVANCED_MODE\GetBool()
 								'gui.ppm2.editor.tabs.details': =>
@@ -1182,6 +1234,26 @@ EDIT_TREE = {
 					defang: Angle(-7, -15, 0)
 					populate: =>
 						@NumSlider('gui.ppm2.editor.neck.height', 'NeckSize', 2)
+
+						size = (_, label) ->
+							size = @frame.controller\GetNeckSize() * 4.3 * @frame.controller\GetPonySize()
+							label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.neck', DLib.i18n.FormatHU(size)))
+
+						@LabelFunc(size)
+
+						size = (_, label) ->
+							size = @frame.controller\GetSizeController()
+							return if not size
+							label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony', DLib.i18n.FormatHU(size\CalculatePonyHeight())))
+
+						@LabelFunc(size)
+
+						size = (_, label) ->
+							size = @frame.controller\GetSizeController()
+							return if not size
+							label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.pony2', DLib.i18n.FormatHU(size\CalculatePonyHeightFull())))
+
+						@LabelFunc(size)
 				}
 
 				overall_body: {
@@ -1193,17 +1265,42 @@ EDIT_TREE = {
 						'gui.ppm2.editor.tabs.main': =>
 							@ComboBox('gui.ppm2.editor.body.suit', 'Bodysuit')
 							@ColorBox('gui.ppm2.editor.body.color', 'BodyColor')
+							@ComboBox('gui.ppm2.editor.clothes.body', 'BodyClothes')
+							@ComboBox('gui.ppm2.editor.clothes.neck', 'NeckClothes')
+
+							if ADVANCED_MODE\GetBool()
+								for {internal, publicName} in *{{'neck', 'Neck'}, {'body', 'Body'}}
+									@Hr()
+									@CheckBox("gui.ppm2.editor.clothes_col.#{internal}_use", "#{publicName}ClothesUseColor")
+
+									for i = 1, PPM2.MAX_CLOTHES_URLS
+										@Label('gui.ppm2.editor.clothes.' .. internal .. '_url' .. i)
+										@URLInput("#{publicName}ClothesURL#{i}")
+
+									@ColorBox("gui.ppm2.editor.clothes_col.#{internal}_#{i}", "#{publicName}ClothesColor#{i}") for i = 1, PPM2.MAX_CLOTHES_COLORS
+
 
 						'gui.ppm2.editor.tabs.back': =>
 							@NumSlider('gui.ppm2.editor.body.spine_length', 'BackSize', 2)
 
+							size = (_, label) ->
+								size = @frame.controller\GetBackSize() * 7 * @frame.controller\GetPonySize()
+								label\SetText(DLib.i18n.localize('gui.ppm2.editor.size.back', DLib.i18n.FormatHU(size)))
+
+							@LabelFunc(size)
+
 						'gui.ppm2.editor.tabs.details': =>
+							@NumSlider('gui.ppm2.editor.body.bump', 'BodyBumpStrength', 2)
+
 							for i = 1, ADVANCED_MODE\GetBool() and PPM2.MAX_BODY_DETAILS or 3
 								@ComboBox('gui.ppm2.editor.body.detail.desc' .. i, "BodyDetail#{i}")
 								@ColorBox('gui.ppm2.editor.body.detail.color' .. i, "BodyDetailColor#{i}")
+
 								if ADVANCED_MODE\GetBool()
+									@CheckBox('gui.ppm2.editor.body.detail.first', "BodyDetailFirst#{i}")
 									@CheckBox('gui.ppm2.editor.body.detail.glow' .. i, "BodyDetailGlow#{i}")
 									@NumSlider('gui.ppm2.editor.body.detail.glow_strength' .. i, "BodyDetailGlowStrength#{i}", 2)
+
 								@Hr()
 
 							@Label('gui.ppm2.editor.body.url_desc')
@@ -1212,6 +1309,7 @@ EDIT_TREE = {
 							for i = 1, ADVANCED_MODE\GetBool() and PPM2.MAX_BODY_DETAILS or 2
 								@Label('gui.ppm2.editor.body.detail.url.desc' .. i)
 								@URLInput("BodyDetailURL#{i}")
+								@CheckBox('gui.ppm2.editor.body.detail.first', "BodyDetailURLFirst#{i}")
 								@ColorBox('gui.ppm2.editor.body.detail.url.color' .. i, "BodyDetailURLColor#{i}")
 								@Hr()
 
@@ -1338,6 +1436,17 @@ EDIT_TREE = {
 					populate: =>
 						@CheckBox('gui.ppm2.editor.hoof.fluffers', 'HoofFluffers')
 						@NumSlider('gui.ppm2.editor.hoof.fluffers', 'HoofFluffersStrength', 2)
+
+						@Hr()
+						@CheckBox('gui.ppm2.editor.body.disable_hoofsteps', 'DisableHoofsteps')
+						@CheckBox('gui.ppm2.editor.body.disable_wander_sounds', 'DisableWanderSounds')
+						@CheckBox('gui.ppm2.editor.body.disable_new_step_sounds', 'DisableStepSounds')
+						@CheckBox('gui.ppm2.editor.body.disable_jump_sound', 'DisableJumpSound')
+						@CheckBox('gui.ppm2.editor.body.disable_falldown_sound', 'DisableFalldownSound')
+
+						@Hr()
+						@CheckBox('gui.ppm2.editor.body.call_playerfootstep', 'CallPlayerFootstepHook')
+						@Label('gui.ppm2.editor.body.call_playerfootstep_desc')
 				}
 
 				legs_generic: {
@@ -1464,7 +1573,7 @@ ppm2_editor3 = ->
 
 	controller = copy\CreateCustomController(ent)
 	controller\SetFlexLerpMultiplier(1.3)
-	copy\SetController(controller)
+	copy\SetNetworkObject(controller)
 
 	@controller = controller
 

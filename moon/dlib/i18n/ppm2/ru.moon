@@ -1,5 +1,5 @@
 
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -28,26 +28,26 @@ gui.ppm2.editor.eyes.separate = 'Использовать разные наст�
 gui.ppm2.editor.eyes.url = 'URL текстура глаза'
 gui.ppm2.editor.eyes.url_desc = 'Когда используется URL текстура; настройки снизу не имеют силы'
 
-gui.ppm2.editor.eyes.lightwarp_desc = 'Lightwarp имеет эффект только на EyeRefract глазаз'
+gui.ppm2.editor.eyes.lightwarp_desc = 'Lightwarp имеет эффект только на EyeRefract глаза'
 gui.ppm2.editor.eyes.lightwarp = "Lightwarp"
 gui.ppm2.editor.eyes.desc1 = "Lightwarp URL текстура\nОБЯЗАНА БЫТЬ 256x16!"
 gui.ppm2.editor.eyes.desc2 = "Сила 'Зеркалья' у глаз\nЭтот параметр влияет на отражения в режиме Отражений в реальном времени\nЗа это отвечает переменная клиента ppm2_cl_reflections\nОстальные игроки увидят отражения только с ppm2_cl_reflections 1\n0 - матовая поверхность; 1 - зеркальная"
 
-for _, {tprefix, prefix} in ipairs {{'def', ''}, {'left', 'Left '}, {'right', 'Right '}}
+for _, {tprefix, prefix, suffix} in ipairs {{'def', '', ''}, {'left', 'Левый: ', 'а'}, {'right', 'Правый: ', 'а'}}
 	gui.ppm2.editor.eyes[tprefix].lightwarp.shader = "#{prefix}Использовать шейдер EyeRefract"
-	gui.ppm2.editor.eyes[tprefix].lightwarp.cornera = "#{prefix}Испольщовать Cornera диффуз текстуру"
-	gui.ppm2.editor.eyes[tprefix].lightwarp.glossiness = "#{prefix}Стеклянность (?)"
+	gui.ppm2.editor.eyes[tprefix].lightwarp.cornera = "#{prefix}Использовать Cornera диффуз текстуру"
+	gui.ppm2.editor.eyes[tprefix].lightwarp.glossiness = "#{prefix}Зеркальность"
 
-	gui.ppm2.editor.eyes[tprefix].type = "#{prefix}Тип глаза"
-	gui.ppm2.editor.eyes[tprefix].reflection_type = "#{prefix}Тип отражений глаза"
+	gui.ppm2.editor.eyes[tprefix].type = "#{prefix}Тип глаз#{suffix}"
+	gui.ppm2.editor.eyes[tprefix].reflection_type = "#{prefix}Тип отражения глаз#{suffix}"
 	gui.ppm2.editor.eyes[tprefix].lines = "#{prefix}Линии радужной оболочки"
-	gui.ppm2.editor.eyes[tprefix].derp = "#{prefix}Derp глаз"
-	gui.ppm2.editor.eyes[tprefix].derp_strength = "#{prefix}Сила Derp глаза"
-	gui.ppm2.editor.eyes[tprefix].iris_size = "#{prefix}Размер глаза"
+	gui.ppm2.editor.eyes[tprefix].derp = "#{prefix}Расхождение глаз#{suffix}"
+	gui.ppm2.editor.eyes[tprefix].derp_strength = "#{prefix}Сила расхождения глаз#{suffix}"
+	gui.ppm2.editor.eyes[tprefix].iris_size = "#{prefix}Размер глаз#{suffix}"
 
 	gui.ppm2.editor.eyes[tprefix].points_inside = "#{prefix}Линии радужной оболочки смотрят внутрь"
-	gui.ppm2.editor.eyes[tprefix].width = "#{prefix}Ширина глаза"
-	gui.ppm2.editor.eyes[tprefix].height = "#{prefix}Высота глаза"
+	gui.ppm2.editor.eyes[tprefix].width = "#{prefix}Ширина глаз#{suffix}"
+	gui.ppm2.editor.eyes[tprefix].height = "#{prefix}Высота глаз#{suffix}"
 
 	gui.ppm2.editor.eyes[tprefix].pupil.width = "#{prefix}Ширина зрачка"
 	gui.ppm2.editor.eyes[tprefix].pupil.height = "#{prefix}Высота зрачка"
@@ -55,16 +55,16 @@ for _, {tprefix, prefix} in ipairs {{'def', ''}, {'left', 'Left '}, {'right', 'R
 
 	gui.ppm2.editor.eyes[tprefix].pupil.shift_x = "#{prefix}Сдвиг зрачка по X"
 	gui.ppm2.editor.eyes[tprefix].pupil.shift_y = "#{prefix}Сдвиг зрачка по Y"
-	gui.ppm2.editor.eyes[tprefix].pupil.rotation = "#{prefix}Поворот глаза"
+	gui.ppm2.editor.eyes[tprefix].pupil.rotation = "#{prefix}Поворот глаз#{suffix}"
 
-	gui.ppm2.editor.eyes[tprefix].background = "#{prefix}Фон глаза"
+	gui.ppm2.editor.eyes[tprefix].background = "#{prefix}Фон глаз#{suffix}"
 	gui.ppm2.editor.eyes[tprefix].pupil_size = "#{prefix}Зрачок"
 	gui.ppm2.editor.eyes[tprefix].top_iris = "#{prefix}Верхняя радужная оболочка"
 	gui.ppm2.editor.eyes[tprefix].bottom_iris = "#{prefix}Нижняя радужная оболочка"
-	gui.ppm2.editor.eyes[tprefix].line1 = "#{prefix}Радужная линия 1"
-	gui.ppm2.editor.eyes[tprefix].line2 = "#{prefix}Радужная линия 2"
+	gui.ppm2.editor.eyes[tprefix].line1 = "#{prefix}Линия радужной оболочки 1"
+	gui.ppm2.editor.eyes[tprefix].line2 = "#{prefix}Линия радужной оболочки 2"
 	gui.ppm2.editor.eyes[tprefix].reflection = "#{prefix}Эффект отражения"
-	gui.ppm2.editor.eyes[tprefix].effect = "#{prefix}Эффект мультяшного глаза"
+	gui.ppm2.editor.eyes[tprefix].effect = "#{prefix}Эффект мультяшного глаз#{suffix}"
 
 gui.ppm2.editor.generic.title = 'PPM/2 Пони редактор'
 gui.ppm2.editor.generic.title_file = '%q - PPM/2 Пони редактор'
@@ -160,6 +160,7 @@ gui.ppm2.editor.tabs.legs = 'Ноги'
 gui.ppm2.editor.tabs.socks = 'Носки'
 gui.ppm2.editor.tabs.newsocks = 'Новые носки'
 gui.ppm2.editor.tabs.about = 'О PPM/2'
+gui.ppm2.editor.tabs.clothes = 'Одежда'
 
 gui.ppm2.editor.old_tabs.mane_tail = 'Грива и хвост'
 gui.ppm2.editor.old_tabs.wings_and_horn_details = 'Детали крыльев и рога'
@@ -229,6 +230,26 @@ for i = 1, 6
 gui.ppm2.editor.ears.bat = 'Уши бэт-пони'
 gui.ppm2.editor.ears.size = 'Размер ушей'
 
+gui.ppm2.editor.clothes.head = 'Головной убор'
+gui.ppm2.editor.clothes.eye = 'Очки'
+gui.ppm2.editor.clothes.neck = 'Одежда на шею'
+gui.ppm2.editor.clothes.body = 'Одежда на тело'
+gui.ppm2.editor.clothes_col.help = 'Некоторые цвета могут не иметь визуального эффекта'
+gui.ppm2.editor.clothes_col.head_use = 'Своя раскарска головного убора'
+gui.ppm2.editor.clothes_col.eye_use = 'Своя раскраска на очки'
+gui.ppm2.editor.clothes_col.neck_use = 'Своя раскраска одежды на шею'
+gui.ppm2.editor.clothes_col.body_use = 'Своя раскраска одежды на тело'
+
+for {internal, publicName} in *{{'head', 'Головной убор'}, {'neck', 'Шея'}, {'body', 'Тело'}, {'eye', 'Очки'}}
+	for i = 1, PPM2.MAX_CLOTHES_COLORS
+		gui.ppm2.editor.clothes[internal .. '_url' .. i] = string.format('%s URL материал №%d', publicName, i)
+
+for i = 1, PPM2.MAX_CLOTHES_COLORS
+	gui.ppm2.editor.clothes_col["head_#{i}"] = 'Цвет головного убора №' .. i
+	gui.ppm2.editor.clothes_col["eye_#{i}"] = 'Цвет очков №' .. i
+	gui.ppm2.editor.clothes_col["neck_#{i}"] = 'Цвет одежды на шею №' .. i
+	gui.ppm2.editor.clothes_col["body_#{i}"] = 'Цвет одежды на тело №' .. i
+
 gui.ppm2.editor.horn.detail_color = 'Цвет детали рога'
 gui.ppm2.editor.horn.glowing_detail = 'Светящаяся деталь рога'
 gui.ppm2.editor.horn.glow_strength = 'Сила свечения'
@@ -239,6 +260,8 @@ gui.ppm2.editor.horn.magic = 'Цвет магии рога'
 gui.ppm2.editor.horn.separate_magic_color = 'Отделить цвет магии от цвета глаз'
 gui.ppm2.editor.horn.separate = 'Отделить цвет рога от тела'
 gui.ppm2.editor.horn.separate_phong = 'Отделить настройки фонга рога от тела'
+gui.ppm2.editor.horn.use_new = 'Использовать новый тип рога'
+gui.ppm2.editor.horn.new_type = 'Тип нового рога'
 
 for i = 1, 3
 	gui.ppm2.editor.horn.detail['desc' .. i] = "URL деталь рога #{i}"
@@ -282,6 +305,14 @@ gui.ppm2.editor.body.color = 'Цвет тела'
 gui.ppm2.editor.body.body_phong = 'Фонг параметрый тела'
 gui.ppm2.editor.body.spine_length = 'Длинна спины'
 gui.ppm2.editor.body.url_desc = 'URL детали тела\nДолжны быть в формате PNG или JPEG (работает так же\nкак и PAC3 URL текстуры)'
+
+gui.ppm2.editor.body.disable_hoofsteps = 'Отключить звук копыт'
+gui.ppm2.editor.body.disable_wander_sounds = 'Отключить звуки остановки'
+gui.ppm2.editor.body.disable_new_step_sounds = 'Отключить звуки ходьбы'
+gui.ppm2.editor.body.disable_jump_sound = 'Отключить звуки прыжков'
+gui.ppm2.editor.body.disable_falldown_sound = 'Отключить звуки приземления'
+gui.ppm2.editor.body.call_playerfootstep = 'Вызывать PlayerFootstep на каждом звуке'
+gui.ppm2.editor.body.call_playerfootstep_desc = 'Данная опция ползволяет вызывать PlayerFootstep хук при каждом физически слышымом звуке.\nВключение данной опции должно увеличить погружение путем взаимодействия с другими\nаддонами, которые работают с данным хуком.\nВы можете отключить данную опцию если вы получаете нежелаемый результат от других аддонов\nили ваш FPS уходит в минус из-за плохо накоженых аддонов.'
 
 for i = 1, PPM2.MAX_BODY_DETAILS
 	gui.ppm2.editor.body.detail['desc' .. i] = "Деталь #{i}"
@@ -448,6 +479,18 @@ gui.ppm2.spawnmenu.reflections = 'Включить отражения в реа�
 gui.ppm2.spawnmenu.reflections_drawdist = 'Дистанция для отрисовки'
 gui.ppm2.spawnmenu.reflections_renderdist = 'Точность отражений'
 gui.ppm2.spawnmenu.doublejump = 'Двойной прыжок включает режим полета'
+gui.ppm2.spawnmenu.vm_magic = 'Изменения ViewModel для единорогов'
 
 tip.ppm2.in_editor = 'В редакторе PPM/2'
 tip.ppm2.camera = "PPM/2 камера игрока %s"
+
+message.ppm2.queue_notify = '%i текстур ожидают отрисовки'
+
+gui.ppm2.editor.body.bump = 'Непрозрачность Bumpmap'
+gui.ppm2.editor.body.detail.first = 'Отрисовывать деталь первой'
+
+gui.ppm2.editor.size.pony = 'Высота коллизий пони: %s'
+gui.ppm2.editor.size.pony2 = 'Визуальная высота пони: ~%s'
+gui.ppm2.editor.size.pony_width = 'Ширина коллизий пони: %s'
+gui.ppm2.editor.size.back = 'Длинна спины: ~%s'
+gui.ppm2.editor.size.neck = 'Длинна шеи: ~%s'

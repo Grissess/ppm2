@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,7 @@ applyPonyData = {
 					net.Start('PPM2.RagdollEdit')
 					net.WriteEntity(ent)
 					net.WriteBool(false)
-					data = PPM2.PonyDataInstance(fil, nil, true, true, false)
+					data = PPM2.PonyDataInstance(fil, nil, true, true)
 					data\WriteNetworkData()
 					net.SendToServer()
 	Filter: genericEditFilter

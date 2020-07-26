@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,32 @@ PPM2.TransformNewModelID = (id = 0) ->
 	maneModelID = math.floor(id / 16) + 1
 	maneModelID = 1 if maneModelID == 0
 	return maneModelID, bgID
+
+PPM2.GetUpperManeModelName = (id = 0) ->
+	modelID, bodygroupID = PPM2.TransformNewModelID(id)
+	modelID = "0" .. modelID if modelID < 10
+	return "models/ppm/hair/ppm_manesetupper#{modelID}.mdl", modelID, bodygroupID
+
+PPM2.GetLowerManeModelName = (id = 0) ->
+	modelID, bodygroupID = PPM2.TransformNewModelID(id)
+	modelID = "0" .. modelID if modelID < 10
+	return "models/ppm/hair/ppm_manesetlower#{modelID}.mdl", modelID, bodygroupID
+
+PPM2.GetTailModelName = (id = 0) ->
+	modelID, bodygroupID = PPM2.TransformNewModelID(id)
+	modelID = "0" .. modelID if modelID < 10
+	return "models/ppm/hair/ppm_tailset#{modelID}.mdl", modelID, bodygroupID
+
+PPM2.TransformHornModelID = (id = 0) ->
+	bgID = id % 16
+	hornModelID = math.floor(id / 16) + 1
+	hornModelID = 1 if hornModelID == 0
+	return hornModelID, bgID
+
+PPM2.GetHornModelName = (id = 0) ->
+	modelID, bodygroupID = PPM2.TransformHornModelID(id)
+	modelID = "0" .. modelID if modelID < 10
+	return "models/ppm/horns/ppm_hornset#{modelID}.mdl", modelID, bodygroupID
 
 do
 	randomColor = (a = 255) -> Color(math.random(0, 255), math.random(0, 255), math.random(0, 255), a)
@@ -95,6 +121,12 @@ PPM2.GetMagicAuraColor = =>
 			return left\Lerp 0.5, right
 
 entMeta = FindMetaTable('Entity')
+
+entMeta.GetPonyRaceFlags = =>
+	return 0 if not @IsPonyCached()
+	data = @GetPonyData()
+	return 0 if not data
+	return data\GetPonyRaceFlags()
 
 entMeta.IsPony = =>
 	model = @GetModel()

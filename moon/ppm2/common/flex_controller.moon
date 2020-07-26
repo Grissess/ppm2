@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -62,6 +62,9 @@
 -- 39   Happy_Eyes
 -- 40   Duck
 
+BLINK_CURVE = {0, 0.2, 0.45, 0.65, 0.9, 1, 1, 0.75, 0.55, 0.25, 0.15, 0}
+BREATH_CURVE = {0, 0, 0, 0.1, 0.3, 0.55, 0.85, 1, 1, 0.85, 0.65, 0.4, 0.2, 0, 0, 0}
+
 DISABLE_FLEXES = CreateConVar('ppm2_disable_flexes', '0', {FCVAR_ARCHIVE}, 'Disable pony flexes controllers. Saves some FPS.')
 
 class FlexState extends PPM2.ModifierBase
@@ -93,6 +96,8 @@ class FlexState extends PPM2.ModifierBase
 		@useLerp = true
 		@lerpMultiplier = 1
 		@activeID = "DisableFlex#{@flexName}"
+		controller = @controller\GetController()\GetData()
+		@SetIsActive(not controller['Get' .. @activeID](controller)) if controller['Get' .. @activeID]
 
 	__tostring: => "[#{@@__name}:#{@flexName}[#{@flexID}]|#{@GetData()}]"
 
@@ -140,9 +145,12 @@ class FlexState extends PPM2.ModifierBase
 			@scale = @originalscale * @scaleModify
 			@speed = @originalspeed * @speedModify
 
-			for i = 1, #@WeightModifiers
-				@modifiers[i] = Lerp(delta * 15 * @speed * @speedModify * @lerpMultiplier, @modifiers[i] or 0, @WeightModifiers[i])
-				@current += @modifiers[i]
+			if @useLerp
+				for i = 1, #@WeightModifiers
+					@modifiers[i] = Lerp(delta * 15 * @speed * @speedModify * @lerpMultiplier, @modifiers[i] or 0, @WeightModifiers[i])
+					@current += @modifiers[i]
+			else
+				@current += @WeightModifiers[i] for i = 1, #@WeightModifiers
 
 			@scale += modif for _, modif in ipairs @ScaleModifiers
 			@speed += modif for _, modif in ipairs @SpeedModifiers
@@ -208,6 +216,8 @@ class FlexSequence extends PPM2.SequenceBase
 
 	SetModifierWeight: (id = '', val = 0) => @GetFlexState(id)\SetModifierWeight(@GetModifierID(id), val)
 	SetModifierSpeed: (id = '', val = 0) => @GetFlexState(id)\SetModifierSpeed(@GetModifierID(id), val)
+	SetUseLerp: (id = '', status = true) => @GetFlexState(id)\SetUseLerp(status)
+	GetUseLerp: (id = '') => @GetFlexState(id)\GetUseLerp()
 
 PPM2.FlexSequence = FlexSequence
 
@@ -257,7 +267,6 @@ class PonyFlexController extends PPM2.ControllerChildren
 		{flex: 'Lowerlid_Raise',    scale: 1, speed: 1, active: false}
 		{flex: 'Happy_Eyes',        scale: 1, speed: 1, active: true}
 		{flex: 'Duck',              scale: 1, speed: 1, active: true}
-
 	}
 
 	@SEQUENCES = {
@@ -413,7 +422,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Left_Blink', 'Right_Blink'}
 			'func': (delta, timeOfAnim) =>
-				return false if @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll')
+				return false if @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll') or (@GetEntity()\IsPlayer() and not @GetEntity()\Alive())
 				value = math.abs(math.sin(CurTimeL() * .5) * .15)
 				@SetModifierWeight(1, value)
 				@SetModifierWeight(2, value)
@@ -426,7 +435,21 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Left_Blink', 'Right_Blink', 'Frown'}
 			'func': (delta, timeOfAnim) =>
-				return if not @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll')
+				allow = true
+
+				if @GetEntity()\IsPlayer()
+					if @GetEntity()\Alive()
+						allow = false
+				else
+					if not @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll')
+						allow = false
+
+				if not allow
+					@SetModifierWeight(1, 0)
+					@SetModifierWeight(2, 0)
+					@SetModifierWeight(3, 0)
+					return
+
 				@SetModifierWeight(1, 1)
 				@SetModifierWeight(2, 1)
 				@SetModifierWeight(3, 0.5)
@@ -437,14 +460,11 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'autostart': true
 			'repeat': true
 			'time': 2
-			'ids': {'Stomach_Out', 'Stomach_In'}
+			'ids': {'Stomach_Out'}
 			'func': (delta, timeOfAnim) =>
-				return false if @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll')
-				In, Out = @GetModifierID(1), @GetModifierID(2)
-				InState, OutState = @GetFlexState(1), @GetFlexState(2)
-				abs = math.abs(0.5 - timeOfAnim)
-				InState\SetModifierWeight(In, abs)
-				OutState\SetModifierWeight(Out, abs)
+				return false if @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll') or (@GetEntity()\IsPlayer() and not @GetEntity()\Alive())
+				return if timeOfAnim < 0 or timeOfAnim > 1
+				@SetModifierWeight(1, math.tbezier(timeOfAnim, BREATH_CURVE) * 0.35)
 		}
 
 		{
@@ -454,7 +474,7 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'time': 5
 			'ids': {'Frown', 'Left_Blink', 'Right_Blink', 'Scrunch', 'Mouth_O', 'JawOpen', 'Grin'}
 			'func': (delta, timeOfAnim) =>
-				return false if not @GetEntity()\IsPlayer() and not @GetEntity()\IsNPC() and @GetEntity().Type ~= 'nextbot'
+				return false if (not @GetEntity()\IsPlayer() or not @GetEntity()\Alive()) and not @GetEntity()\IsNPC() and @GetEntity().Type ~= 'nextbot'
 				frown = @GetModifierID(1)
 				frownState = @GetFlexState(1)
 				left, right = @GetModifierID(2), @GetModifierID(3)
@@ -731,24 +751,30 @@ class PonyFlexController extends PPM2.ControllerChildren
 			'autostart': true
 			'repeat': true
 			'time': 7
-			'ids': {'Left_Blink', 'Right_Blink'}
+			'ids': {'Eyes_Blink_Lower'}
 			'create': =>
-				@SetModifierSpeed(1, 5)
-				@SetModifierSpeed(2, 5)
+				@SetUseLerp(1, false)
+
 			'reset': =>
 				@nextBlink = math.random(300, 600) / 1000
-				@nextBlinkLength = math.random(15, 30) / 1000
+				@nextBlinkLength = math.random(15, 30) / 800
 				@min, @max = @nextBlink, @nextBlink + @nextBlinkLength
+
 			'func': (delta, timeOfAnim) =>
+				return false if @GetEntity()\GetNWBool('PPM2.IsDeathRagdoll') or (@GetEntity()\IsPlayer() and not @GetEntity()\Alive())
 				if @min > timeOfAnim or @max < timeOfAnim
 					if @blinkHit
 						@blinkHit = false
 						@SetModifierWeight(1, 0)
-						@SetModifierWeight(2, 0)
+
 					return
+
 				len = (timeOfAnim - @min) / @nextBlinkLength
-				@SetModifierWeight(1, math.sin(len * math.pi))
-				@SetModifierWeight(2, math.sin(len * math.pi))
+				blink = math.tbezier(len\clamp(0, 1), BLINK_CURVE)
+
+				@SetModifierWeight(1, blink)
+				-- print(len, blink)
+
 				@blinkHit = true
 		}
 

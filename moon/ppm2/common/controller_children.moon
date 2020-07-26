@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,12 @@ class PPM2.ControllerChildren extends PPM2.SequenceHolder
 	-- IsValid: => @isValid
 	IsValid: => @isValid and IsValid(@GetEntity())
 	GetData: => @nwController
-	GrabData: (str, ...) => @nwController['Get' .. str](@nwController, ...)
+	GrabData: (str, ...) =>
+		error('Get' .. str .. ' - no such a function') if not @nwController['Get' .. str]
+		@nwController['Get' .. str](@nwController, ...)
+	SetData: (str, ...) =>
+		error('Set' .. str .. ' - no such a function') if not @nwController['Set' .. str]
+		@nwController['Set' .. str](@nwController, ...)
 	GetEntity: => @controller\GetEntity()
 	GetEntityID: => @entID
 	GetDataID: => @entID

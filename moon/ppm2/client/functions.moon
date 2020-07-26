@@ -1,6 +1,6 @@
 
 --
--- Copyright (C) 2017-2019 DBot
+-- Copyright (C) 2017-2020 DBotThePony
 
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -163,3 +163,8 @@ PPM2.ReadFromOldData = (filename = '_current') ->
 	for key, value in pairs outputData
 		data["Set#{key}"](data, value, false)
 	return data, outputData
+
+_G.LocalPonyData = ->
+	ply = LocalPlayer()
+	return false if not ply
+	return ply\GetPonyData() or false
